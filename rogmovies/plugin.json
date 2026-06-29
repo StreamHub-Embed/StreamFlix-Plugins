@@ -1,0 +1,10 @@
+{
+  "packagename": "dev.streamflix.rogmovies",
+  "name": "ROGmovies",
+  "version": 1,
+  "baseUrl": "https://rogmovies.cv",
+  "description": "Browse and stream from ROGmovies",
+  "authors": ["0xBadCode"],
+  "languages": ["hi", "en"],
+  "categories": ["Movie", "TvSeries"]
+}
