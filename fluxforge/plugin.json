@@ -1,0 +1,10 @@
+{
+  "packagename": "dev.streamflix.fluxforge",
+  "name": "FluxForge",
+  "version": 1,
+  "baseUrl": "https://db.videasy.to",
+  "description": "Browse movies and TV shows via TMDB proxy API",
+  "authors": ["0xBadCode"],
+  "languages": ["en"],
+  "categories": ["Movie", "TvSeries"]
+}

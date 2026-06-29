@@ -1,0 +1,26 @@
+{
+  "packageName": "hf.tmdb.embed",
+  "name": "TMDB-Embed",
+  "version": 1,
+  "baseUrl": "https://db.videasy.to/3",
+  "services": [
+    { "name": "Vyla", "baseUrl": "https://missourimonster-vyla.hf.space", "urlType": "standard" },
+    { "name": "Vyla-v2", "baseUrl": "https://missourimonster-vyla-v2.hf.space", "urlType": "standard" },
+    { "name": "Vyla-v3", "baseUrl": "https://missourimonster-vyla-v3.hf.space", "urlType": "standard" },
+    { "name": "Vyla-v4", "baseUrl": "https://missourimonster-vyla-v4.hf.space", "urlType": "standard" },
+    { "name": "Movieslay", "baseUrl": "https://missourimonster-movieslay.hf.space", "urlType": "standard" },
+    { "name": "StreamHub-v1", "baseUrl": "https://StreamHubAPI-v1.hf.space", "urlType": "standard" },
+    { "name": "StreamHub-v2", "baseUrl": "https://StreamHubAPI-v2.hf.space", "urlType": "standard" },
+    { "name": "D3R-v1", "baseUrl": "https://d3rhub-v1.hf.space", "urlType": "query" },
+    { "name": "D3R-v2", "baseUrl": "https://d3rhub-v2.hf.space", "urlType": "query" },
+    { "name": "Nuvio-v1", "baseUrl": "https://NuvioHub-v1.hf.space", "urlType": "query" },
+    { "name": "Nuvio-v2", "baseUrl": "https://NuvioHub-v2.hf.space", "urlType": "query" }
+  ],
+  "description": "High-quality fast streams via TMDB-Embed.",
+  "authors": ["0xBadCode"],
+  "languages": ["en"],
+  "categories": ["Movie", "TvSeries"],
+  "providers": [
+    { "id": "TMDB-EMBED", "name": "TMDB Embed" }
+  ]
+}
