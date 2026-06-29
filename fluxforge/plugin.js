@@ -198,7 +198,7 @@
             var urls = json.data && json.data.stream_urls;
             if (!Array.isArray(urls)) return [];
             return urls.map(function(u, i) {
-                return new StreamResult({ source: "Vaplayer", name: "Vaplayer [Server " + (i + 1) + "]", url: u, quality: 1080, headers: H_VAPLAYER });
+                return new StreamResult({ source: "Vaplayer [Server " + (i + 1) + " - 1080p]", name: "Vaplayer [Server " + (i + 1) + "]", url: u, quality: 1080, headers: H_VAPLAYER });
             });
         } catch (_) { return []; }
     }
@@ -223,7 +223,7 @@
             var json = JSON.parse(res.body);
             var playlist = json.stream && json.stream.playlist;
             if (!playlist) return [];
-            return [new StreamResult({ source: "Vidlink", name: "Vidlink", url: playlist.split("?")[0], quality: 1080, headers: H_VIDLINK })];
+            return [new StreamResult({ source: "Vidlink [Auto - 1080p]", name: "Vidlink", url: playlist, quality: 1080, headers: H_VIDLINK })];
         } catch (_) { return []; }
     }
 
@@ -272,7 +272,7 @@
                         if (src.url) {
                             var q = parseQuality(src.quality);
                             results.push(new StreamResult({
-                                source: "VidEasy",
+                                source: "VidEasy [" + srv.toUpperCase() + " - " + qLabel(q) + "]",
                                 name: "VidEasy [" + srv.toUpperCase() + " " + qLabel(q) + "]",
                                 url: src.url,
                                 quality: q,
@@ -311,7 +311,7 @@
                 var rawUrl = obj.url.indexOf("%") !== -1 ? decodeURIComponent(obj.url) : obj.url;
                 var fmt = rawUrl.indexOf(".mp4") !== -1 ? " MP4" : "";
                 var q = parseQuality(key);
-                results.push(new StreamResult({ source: "Vidrock-" + key, name: "Vidrock [" + key + " " + lang + fmt + " " + qLabel(q) + "]", url: rawUrl, quality: q, headers: H_VIDROCK }));
+                results.push(new StreamResult({ source: "Vidrock [" + lang + fmt + " - " + qLabel(q) + "]", name: "Vidrock [" + key + " " + lang + fmt + " " + qLabel(q) + "]", url: rawUrl, quality: q, headers: H_VIDROCK }));
             }
             return results;
         } catch (_) { return []; }
@@ -409,7 +409,7 @@
                     var finalUrl = decStream.result && decStream.result.url;
                     if (!finalUrl) return;
 
-                    results.push(new StreamResult({ source: "VidFast", name: "VidFast [" + name + "]", url: finalUrl, quality: 1080, headers: H_VIDFAST }));
+                    results.push(new StreamResult({ source: "VidFast [" + name + " - 1080p]", name: "VidFast [" + name + "]", url: finalUrl, quality: 1080, headers: H_VIDFAST }));
                 } catch (_) {}
             }));
             return results;
@@ -478,6 +478,7 @@
                         var srcName = s.source || "";
                         var q = parseQuality(s.quality || 1080);
                         var nameLabel = "RiveStream [" + srcName + (srcName ? " " : "") + qLabel(q) + "]";
+                        var displaySource = "RiveStream [" + (srcName || "Auto") + " - " + qLabel(q) + "]";
 
                         if (url.indexOf("proxy?url=") !== -1) {
                             try {
@@ -493,12 +494,12 @@
                                         if (hJson.Origin) proxyHeaders["Origin"] = hJson.Origin;
                                     } catch (_) {}
                                 }
-                                results.push(new StreamResult({ source: "RiveStream", name: nameLabel, url: decodedUrl, quality: q, headers: proxyHeaders }));
+                                results.push(new StreamResult({ source: displaySource, name: nameLabel, url: decodedUrl, quality: q, headers: proxyHeaders }));
                             } catch (_) {
-                                results.push(new StreamResult({ source: "RiveStream", name: nameLabel, url: url, quality: q, headers: H_RIVESTREAM }));
+                                results.push(new StreamResult({ source: displaySource, name: nameLabel, url: url, quality: q, headers: H_RIVESTREAM }));
                             }
                         } else {
-                            results.push(new StreamResult({ source: "RiveStream", name: nameLabel, url: url, quality: q, headers: H_RIVESTREAM }));
+                            results.push(new StreamResult({ source: displaySource, name: nameLabel, url: url, quality: q, headers: H_RIVESTREAM }));
                         }
                     }
                 } catch (_) {}
@@ -566,7 +567,7 @@
             var id = (dataSrc.match(/id=([^&]+)/) || [])[1];
             if (!id) return [];
             var m3u8 = await fetchFromUqloads("https://uqloads.xyz/e/" + id);
-            if (m3u8) return [new StreamResult({ source: "2Embed", name: "2Embed", url: m3u8, quality: 1080 })];
+            if (m3u8) return [new StreamResult({ source: "2Embed [Auto - 1080p]", name: "2Embed", url: m3u8, quality: 1080 })];
             return [];
         } catch (_) { return []; }
     }
@@ -712,7 +713,8 @@
                 var domain = VSRC_DOMAINS[version] || "";
                 var finalUrl = domain ? raw.replace(placeholderRe, domain) : raw;
                 var srvLabel = version ? "Server " + version.toUpperCase() : "";
-                results.push(new StreamResult({ source: "VidsrcXYZ", name: "VidsrcXYZ" + (srvLabel ? " [" + srvLabel + "]" : ""), url: finalUrl, quality: 1080, headers: { "Referer": ref } }));
+                var displaySource = "VidsrcXYZ [" + (srvLabel || "Auto") + " - 1080p]";
+                results.push(new StreamResult({ source: displaySource, name: "VidsrcXYZ" + (srvLabel ? " [" + srvLabel + "]" : ""), url: finalUrl, quality: 1080, headers: { "Referer": ref } }));
             }
             return results;
         } catch (_) { return []; }
@@ -762,6 +764,7 @@
                 if (Array.isArray(r)) r.forEach(function(s) {
                     if (s && s.url && !seen[s.url]) {
                         seen[s.url] = true;
+                        s.drop_403 = true;
                         results.push(s);
                     }
                 });
