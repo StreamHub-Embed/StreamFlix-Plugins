@@ -12,6 +12,10 @@
     var H_VIDFAST  = { "Referer": "https://vidfast.pro/", "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36", "X-Requested-With": "XMLHttpRequest" };
     var H_RIVESTREAM = { "User-Agent": UA };
 
+    // ───── SkyMoviesHD Config ─────
+    var SKY_API = "https://skymovieshd.ceo";
+    var H_SKY = { "User-Agent": UA, "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", "Accept-Language": "en-US,en;q=0.9" };
+
     function cleanText(v) { return String(v || "").replace(/\s+/g, " ").trim(); }
 
     async function fetchJson(url) {
@@ -720,6 +724,120 @@
         } catch (_) { return []; }
     }
 
+    // ───── SkyMoviesHD Stream Provider ─────
+    function skyParseTitle(raw) {
+        var t = cleanText(raw);
+        var y = null, ym = t.match(/\((\d{4})\)/);
+        if (ym) y = parseInt(ym[1], 10);
+        var title = t
+            .replace(/\((\d{4})\)/, " ")
+            .replace(/\s*\[.*?\]/g, " ")
+            .replace(/\s*\d{3,4}p\s*/i, " ")
+            .replace(/\s*(?:HEVC|HDRip|x264|x265|AAC|ESubs?|UNRATED|10Bit|HC|ORG|CAMRip|HDRip|PREHD|HDTC|WEB\s*DL|HDTV|DVD\s*Rip|BRRip|BluRay)\s*/gi, " ")
+            .replace(/\s*(?:DDP5[.]1|AC3|5[.]1|2[.]0)\s*/gi, " ")
+            .replace(/\s*(?:Hindi|English|Tamil|Telugu|Urdu|Bengali|Punjabi|Marathi|Gujarati|Malayalam|Kannada|Bhojpuri|Oriya|Assamese|Dual\s*Audio|Pakistani|Bangladeshi)\s*/gi, " ")
+            .replace(/\s+Dubbed\s+/gi, " ")
+            .replace(/\s+HQ\s+/gi, " ")
+            .replace(/\s*(?:Full\s+)?(?:South\s+)?Movie/gi, " ")
+            .replace(/\s*Complete\s+Series.*/i, " ")
+            .replace(/\s*Web\s+Series.*/i, " ")
+            .replace(/\s+S\d{2}E?\d{0,2}\s*/i, " ")
+            .replace(/[|]/g, " ")
+            .replace(/\./g, " ")
+            .replace(/\s+(?:South|Full|ORG|Original|Dubbed|Hollywood|Bollywood)\s*/gi, " ")
+            .replace(/\s+Movie\s*/gi, " ")
+            .replace(/\s{2,}/g, " ")
+            .trim();
+        return { title: title || t, year: y };
+    }
+
+    async function fetchSkyMoviesHD(tmdbId, season, episode) {
+        try {
+            // Get TMDB details for title/year
+            var details = await fetchJson(TMDB_API + "/" + (season == null ? "movie" : "tv") + "/" + tmdbId + "?append_to_response=external_ids");
+            if (!details) return [];
+            var searchTitle = details.title || details.name || "";
+            var searchYear = (details.release_date || details.first_air_date || "").split("-")[0];
+
+            // Search skymovieshd
+            var q = encodeURIComponent(cleanText(searchTitle));
+            var res = await http_get(SKY_API + "/search.php?search=" + q + "&cat=All", { headers: H_SKY });
+            if (!res || !res.body) return [];
+
+            var doc = parseHtml(res.body);
+            var anchors = doc.querySelectorAll("a[href*='/movie/']");
+            var bestMatch = null, bestScore = 0;
+
+            for (var ai = 0; ai < anchors.length; ai++) {
+                var href = anchors[ai].getAttribute("href");
+                var text = cleanText(anchors[ai].textContent);
+                if (!href || !text) continue;
+
+                var parsed = skyParseTitle(text);
+                var score = 0;
+                if (parsed.title.toLowerCase() === searchTitle.toLowerCase()) score += 5;
+                else if (parsed.title.toLowerCase().indexOf(searchTitle.toLowerCase()) !== -1) score += 3;
+                if (parsed.year && searchYear && parsed.year === parseInt(searchYear, 10)) score += 2;
+                if (score > bestScore) {
+                    bestScore = score;
+                    if (href.indexOf("/") !== 0) href = "/" + href;
+                    bestMatch = href;
+                }
+            }
+
+            if (!bestMatch) return [];
+
+            // Scrape movie page for download links
+            var pageUrl = SKY_API + bestMatch;
+            var pr = await http_get(pageUrl, { headers: H_SKY });
+            if (!pr || !pr.body) return [];
+
+            var anchors2 = parseHtml(pr.body).querySelectorAll("a");
+            var quality = 1080;
+            var qm = pr.body.match(/(\d{3,4})[pP]/);
+            if (qm) quality = parseInt(qm[1], 10);
+
+            var results = [];
+            for (var bi = 0; bi < anchors2.length; bi++) {
+                var hr = anchors2[bi].getAttribute("href") || "";
+                var txt = cleanText(anchors2[bi].textContent);
+                if (!/howblogs\.xyz|tpead\.net|hubcloud|cinedrive|gdflix|hubdrive|filepress|gofile/i.test(hr)) continue;
+
+                if (hr.indexOf("howblogs.xyz") !== -1) {
+                    try {
+                        var hbr = await http_get(hr, { headers: H_SKY });
+                        if (hbr && hbr.body) {
+                            var hbdoc = parseHtml(hbr.body);
+                            var hbAs = hbdoc.querySelectorAll("a");
+                            for (var hi = 0; hi < hbAs.length; hi++) {
+                                var hbHref = hbAs[hi].getAttribute("href") || "";
+                                if (hbHref.indexOf("http") === 0 && !hbHref.includes("howblogs")) {
+                                    results.push(new StreamResult({
+                                        source: "SkyMoviesHD [Resolved]",
+                                        name: "SkyMoviesHD [" + txt + "]",
+                                        url: hbHref,
+                                        quality: quality,
+                                        headers: { "User-Agent": UA, "Referer": "https://howblogs.xyz/" }
+                                    }));
+                                }
+                            }
+                        }
+                    } catch (_) {}
+                } else {
+                    results.push(new StreamResult({
+                        source: "SkyMoviesHD",
+                        name: "SkyMoviesHD [" + txt + "]",
+                        url: hr,
+                        quality: quality,
+                        headers: { "User-Agent": UA, "Referer": SKY_API + "/" }
+                    }));
+                }
+            }
+
+            return results;
+        } catch (_) { return []; }
+    }
+
     // ───── loadStreams ─────
     async function loadStreams(data, cb) {
         try {
@@ -754,7 +872,8 @@
                 fetchVidrock(tmdbId, season, episode),
                 fetchRiveStream(tmdbId, season, episode),
                 fetch2embed(imdbId, season, episode),
-                fetchVidSrcXyz(imdbId, season, episode)
+                fetchVidSrcXyz(imdbId, season, episode),
+                fetchSkyMoviesHD(tmdbId, season, episode)
             ];
             try { providerCalls.push(fetchVidFast(tmdbId, season, episode)); } catch(_) {}
 
