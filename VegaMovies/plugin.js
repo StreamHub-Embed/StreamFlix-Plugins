@@ -531,10 +531,21 @@
                 if (imgM && imgM[1]) { poster = imgM[1]; break; }
             }
             if (!poster) {
+                var ogM = html.match(/<meta\s+property="og:image"[^>]+content="([^"]+)"/i);
+                if (ogM) poster = ogM[1];
+            }
+            if (!poster) {
+                var preM = html.match(/<link\s+rel="preload"[^>]+as="image"[^>]+href="([^"]+)"/i);
+                if (preM) poster = preM[1];
+            }
+            if (!poster) {
                 var imgRe = /<img[^>]+src="([^"]+)"[^>]*>/gi;
                 var allImgs = [];
                 while ((imgM = imgRe.exec(html)) !== null) allImgs.push(imgM[1]);
-                if (allImgs.length > 0) poster = allImgs[0];
+                for (var pii = 0; pii < allImgs.length; pii++) {
+                    if (allImgs[pii].indexOf('/images/') < 0 && allImgs[pii].indexOf('gravatar') < 0) { poster = allImgs[pii]; break; }
+                }
+                if (!poster && allImgs.length > 0) poster = allImgs[0];
             }
 
             // IMDb - Kotlin: document.select("a[href*=\"imdb\"]").attr("href")
@@ -548,8 +559,10 @@
                 'drama', 'korean', 'anime', 'season', 'episode'
             ];
             var h3Tags = findElements(html, 'h3');
-            for (var hi = 0; hi < h3Tags.length; hi++) {
-                var ht = h3Tags[hi].text.toLowerCase();
+            var h4Tags = findElements(html, 'h4');
+            var allH = h3Tags.concat(h4Tags);
+            for (var hi = 0; hi < allH.length; hi++) {
+                var ht = allH[hi].text.toLowerCase();
                 for (var tci = 0; tci < typeChecks.length; tci++) {
                     if (ht.indexOf(typeChecks[tci]) >= 0 && ht.indexOf('movie') < 0 && ht.indexOf('film') < 0) {
                         isSeries = true; break;
@@ -558,19 +571,33 @@
                 if (isSeries) break;
             }
 
-            // Description - Kotlin: nextElementSibling after h3 with SYNOPSIS/PLOT
+            // Description - Kotlin: nextElementSibling after h3/h4 with SYNOPSIS/PLOT
             var description = '';
-            for (var hi = 0; hi < h3Tags.length; hi++) {
-                var spanM = h3Tags[hi].html.match(/<span[^>]*>([\s\S]*?)<\/span>/i);
-                if (spanM && /synopsis\/plot/i.test(spanM[1])) {
-                    var hPos = html.indexOf(h3Tags[hi].html);
-                    if (hPos >= 0) { var ne = nextSiblingAt(html, hPos + h3Tags[hi].html.length); if (ne) description = ne.text; }
+            for (var hi = 0; hi < allH.length; hi++) {
+                var spanM = allH[hi].html.match(/<span[^>]*>([\s\S]*?)<\/span>/i);
+                var tagText = spanM ? spanM[1] : allH[hi].text;
+                if (/synopsis\/plot/i.test(tagText)) {
+                    var hPos = html.indexOf(allH[hi].html);
+                    if (hPos >= 0) { var ne = nextSiblingAt(html, hPos + allH[hi].html.length); if (ne) description = ne.text; }
                     break;
                 }
             }
 
             // Fire cinemeta async — resolves during intermediate page fetches
             var genres = [], imdbRating = '', year = '';
+            // Fallback: if no imdbId on page, search cinemeta catalog by title
+            if (!imdbId && title) {
+                try {
+                    var searchKey = encodeURIComponent(title.replace(/\s*\(.*?\)/g, '').trim());
+                    var catRes = await fetchJson('https://v3-cinemeta.strem.io/catalog/' + (isSeries ? 'series' : 'movie') + '/top/search=' + searchKey + '.json');
+                    if (catRes && catRes.metas && catRes.metas.length > 0) {
+                        var best = catRes.metas[0];
+                        if (best.name && (best.name.toLowerCase() === title.toLowerCase() || best.name.toLowerCase().indexOf(title.toLowerCase()) >= 0 || title.toLowerCase().indexOf(best.name.toLowerCase()) >= 0)) {
+                            imdbId = best.id;
+                        }
+                    }
+                } catch (e) {}
+            }
             var cinemetaP = imdbId ? fetchJson(CINEMETA_URL + '/' + (isSeries ? 'series' : 'movie') + '/' + imdbId + '.json') : Promise.resolve(null);
 
             // === EPISODES ===
