@@ -18,6 +18,21 @@
 
     function cleanText(v) { return String(v || "").replace(/\s+/g, " ").trim(); }
 
+    // Helper to get base domain URL
+    function getBaseUrl(url) {
+        var m = String(url || "").match(/^(https?:\/\/[^\/]+)/);
+        return m ? m[1] : url;
+    }
+
+    // Helper to fetch page body with custom headers
+    async function fetchUrl(url, ch) {
+        try {
+            var merged = Object.assign({}, HEADERS, ch || {});
+            var res = await http_get(url, merged);
+            return res ? (res.body || res.text || "") : "";
+        } catch (_) { return ""; }
+    }
+
     async function fetchJson(url) {
         try { var r = await http_get(url, { headers: HEADERS }); return JSON.parse(r.body || "null"); }
         catch (_) { return null; }
@@ -725,6 +740,205 @@
     }
 
     // ───── SkyMoviesHD Stream Provider ─────
+    async function resolveDirectStream(url) {
+        var streams = [];
+        var HTML_HEADERS = { "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" };
+        try {
+            var lowerUrl = url.toLowerCase();
+            if (lowerUrl.indexOf("pixeldrain.dev/u/") !== -1 || lowerUrl.indexOf("pixeldrain.com/u/") !== -1) {
+                var pxlId = url.split("/u/")[1].split("?")[0];
+                streams.push({ url: "https://pixeldrain.dev/api/file/" + pxlId + "?download", label: "Pixeldrain API" });
+            } else if (lowerUrl.indexOf("filepress") !== -1) {
+                var parsedUrl = String(url || "");
+                var m = parsedUrl.match(/\/file\/([a-zA-Z0-9]+)/);
+                var fileId = m ? m[1] : "";
+                if (fileId) {
+                    var initialBaseUrl = getBaseUrl(url);
+                    var finalBaseUrl = initialBaseUrl;
+                    var redirectCheck = await http_get(url, { redirect: "manual", headers: { "User-Agent": UA } });
+                    if (redirectCheck && (redirectCheck.status === 301 || redirectCheck.status === 302 || redirectCheck.status === 307 || redirectCheck.status === 308)) {
+                        var loc = redirectCheck.headers["location"] || redirectCheck.headers["Location"];
+                        if (loc) {
+                            if (loc.indexOf("http") === 0) {
+                                finalBaseUrl = getBaseUrl(loc);
+                            }
+                        }
+                    }
+                    var getUrl = finalBaseUrl + "/api/file/get/" + fileId;
+                    var detailRes = await http_get(getUrl, { headers: { "Accept": "application/json", "User-Agent": UA } });
+                    if (detailRes && detailRes.body) {
+                        try {
+                            var detailJson = JSON.parse(detailRes.body);
+                            if (detailJson && detailJson.status && detailJson.data) {
+                                var downloadOptions = detailJson.data.downloadOptions || {};
+                                var preferredMethod = "";
+                                if (downloadOptions.indexDownlaod) preferredMethod = "indexDownlaod";
+                                else if (downloadOptions.publicDownlaod) preferredMethod = "publicDownlaod";
+                                else if (downloadOptions.publicUserDownlaod) preferredMethod = "publicUserDownlaod";
+
+                                if (preferredMethod) {
+                                    var postUrl = finalBaseUrl + "/api/file/downlaod/";
+                                    var initPayload = {
+                                        captchaValue: "",
+                                        id: fileId,
+                                        method: preferredMethod
+                                    };
+                                    var initRes = await http_post(postUrl, {
+                                        headers: {
+                                            "Content-Type": "application/json",
+                                            "Referer": url,
+                                            "Origin": finalBaseUrl
+                                        },
+                                        body: JSON.stringify(initPayload)
+                                    });
+                                    if (initRes && initRes.body) {
+                                        var initJson = JSON.parse(initRes.body);
+                                        if (initJson && initJson.status && initJson.data) {
+                                            var taskId = initJson.data;
+                                            var usesV2 = ["publicDownlaod", "privateDownlaod", "publicUserDownlaod", "indexDownlaod", "cloudDownlaod", "cloudR2Downlaod"].indexOf(preferredMethod) !== -1;
+                                            var finalUrl = finalBaseUrl + "/api/file/" + (usesV2 ? "downlaod2/" : "downlaod/");
+                                            var finalPayload = {
+                                                captchaValue: "",
+                                                id: taskId,
+                                                method: preferredMethod
+                                            };
+                                            var finalRes = await http_post(finalUrl, {
+                                                headers: {
+                                                    "Content-Type": "application/json",
+                                                    "Referer": url,
+                                                    "Origin": finalBaseUrl
+                                                },
+                                                body: JSON.stringify(finalPayload)
+                                            });
+                                            if (finalRes && finalRes.body) {
+                                                var finalJson = JSON.parse(finalRes.body);
+                                                if (finalJson && finalJson.status && finalJson.data) {
+                                                    var dlLinks = finalJson.data;
+                                                    if (Array.isArray(dlLinks)) {
+                                                        for (var li = 0; li < dlLinks.length; li++) {
+                                                            if (dlLinks[li]) streams.push({ url: dlLinks[li], label: "FilePress Direct", referer: finalBaseUrl + "/", skip_filter: true });
+                                                        }
+                                                    } else if (typeof dlLinks === "string" && dlLinks) {
+                                                        streams.push({ url: dlLinks, label: "FilePress Direct", referer: finalBaseUrl + "/", skip_filter: true });
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        } catch (_) {}
+                    }
+                }
+            } else if (lowerUrl.indexOf("gdflix.dev/file/") !== -1) {
+                var html = await fetchUrl(url, HTML_HEADERS);
+                if (html) {
+                    var instM = html.match(/href="([^"]*instant\.busycdn\.xyz[^"]*)"/i);
+                    if (instM) streams.push({ url: instM[1], label: "GDFlix Instant 10Gbps" });
+                    var fastM = html.match(/href="([^"]*gdflix\.dev\/zfile\/[^"]*)"/i);
+                    if (fastM) streams.push({ url: fastM[1], label: "GDFlix Fast Cloud" });
+                }
+            } else if (lowerUrl.indexOf("hubcloud") !== -1 || lowerUrl.indexOf("vcloud") !== -1) {
+                var html = await fetchUrl(url, HTML_HEADERS);
+                if (html) {
+                    var genM = html.match(/href="([^"]*gamerxyt\.com\/hubcloud\.php[^"]*)"/i);
+                    if (genM) {
+                        var genUrl = genM[1].replace(/&amp;/g, "&");
+                        var genHtml = await fetchUrl(genUrl, HTML_HEADERS);
+                        if (genHtml) {
+                            var pxM = genHtml.match(/href="([^"]*pixel\.hubcloud\.cx[^"]*)"/i);
+                            if (pxM) streams.push({ url: pxM[1], label: "HubCloud 10Gbps" });
+                            var pxlM = genHtml.match(/var\s+pxl\s*=\s*["']([^"']+)["']/);
+                            if (pxlM) {
+                                var pxlId = pxlM[1].split("/u/")[1];
+                                streams.push({ url: "https://pixeldrain.dev/api/file/" + pxlId + "?download", label: "HubCloud Pixeldrain" });
+                            }
+                            var buzzM = genHtml.match(/href="([^"]*bzzhr\.co[^"]*)"/i);
+                            if (buzzM) streams.push({ url: buzzM[1], label: "HubCloud Buzz" });
+                            var zipM = genHtml.match(/href="([^"]*workers\.dev\/[^"]*\.zip)"/i);
+                            if (zipM) streams.push({ url: zipM[1], label: "HubCloud ZipDisk" });
+                        }
+                    }
+                }
+            } else if (lowerUrl.indexOf("voe.sx/") !== -1) {
+                // Decrypt VOE player stream URL
+                var html = await fetchUrl(url, HTML_HEADERS);
+                if (html) {
+                    var redirM = html.match(/window\.location\.href\s*=\s*['"]([^'"]+)['"]/);
+                    if (redirM) {
+                        var redirHtml = await fetchUrl(redirM[1], HTML_HEADERS);
+                        if (redirHtml) {
+                            var decrypted = false;
+                            var jsonM = redirHtml.match(/<script type="application\/json">(\[.*?\])<\/script>/);
+                            if (jsonM) {
+                                try {
+                                    var arr = JSON.parse(jsonM[1]);
+                                    var str = arr[0];
+                                    var rot = str.replace(/[a-zA-Z]/g, function(c) {
+                                        return String.fromCharCode((c <= "Z" ? 90 : 122) >= (c = c.charCodeAt(0) + 13) ? c : c - 26);
+                                    });
+                                    var clean = rot.replace(/[^a-zA-Z0-9+\/=]/g, '');
+                                    var bin = atob(clean);
+                                    var shifted = [];
+                                    for (var i = bin.length - 1; i >= 0; i--) {
+                                        shifted.push(String.fromCharCode((bin.charCodeAt(i) - 3 + 256) % 256));
+                                    }
+                                    var finalClean = shifted.join('').replace(/[^a-zA-Z0-9+\/=]/g, '');
+                                    var decryptedJson = JSON.parse(atob(finalClean));
+                                    if (decryptedJson) {
+                                        if (decryptedJson.source) {
+                                            streams.push({ url: decryptedJson.source, label: "VOE Playback HLS" });
+                                            decrypted = true;
+                                        }
+                                        if (decryptedJson.direct_access_url) {
+                                            streams.push({ url: decryptedJson.direct_access_url, label: "VOE Direct MP4" });
+                                            decrypted = true;
+                                        }
+                                    }
+                                } catch (_) {}
+                            }
+                            if (!decrypted) {
+                                var srcM = redirHtml.match(/var\s+source\s*=\s*['"]([^'"]+)['"]/);
+                                if (srcM && srcM[1].indexOf("test-videos.co.uk") === -1) {
+                                    streams.push({ url: srcM[1], label: "VOE Direct" });
+                                }
+                                var dlPageM = redirHtml.match(/href="([^"]*\/download)"/i);
+                                if (dlPageM) {
+                                    var dlHtml = await fetchUrl(dlPageM[1], HTML_HEADERS);
+                                    if (dlHtml) {
+                                        var dlRedir = dlHtml.match(/window\.location\.href\s*=\s*['"]([^'"]+)['"]/);
+                                        if (dlRedir) {
+                                            var targetHtml = await fetchUrl(dlRedir[1], HTML_HEADERS);
+                                            if (targetHtml) {
+                                                var finalDl = targetHtml.match(/href="([^"]*)"[^>]*class="[^"]*(?:btn-primary|download-user-file)/i) || targetHtml.match(/class="[^"]*(?:btn-primary|download-user-file)"[^>]*href="([^"]*)"/i);
+                                                if (finalDl) streams.push({ url: finalDl[1], label: "VOE Download File" });
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } else if (lowerUrl.indexOf("streamtape") !== -1 || lowerUrl.indexOf("tpead.net") !== -1) {
+                var html = await fetchUrl(url, HTML_HEADERS);
+                if (html) {
+                    var tapeM = html.match(/id="ideoooolink"[^>]*>([^<]+)/i);
+                    if (tapeM) {
+                        var path = tapeM[1];
+                        var originalBase = getBaseUrl(url);
+                        var matchDom = path.match(/^\/[^\/]+\/(get_video.*)/);
+                        if (matchDom) {
+                            path = "/" + matchDom[1];
+                        }
+                        streams.push({ url: originalBase + path, label: "Streamtape Stream" });
+                    }
+                }
+            }
+        } catch (_) {}
+        return streams;
+    }
+
     function skyParseTitle(raw) {
         var t = cleanText(raw);
         var y = null, ym = t.match(/\((\d{4})\)/);
@@ -766,8 +980,7 @@
 
             var doc = parseHtml(res.body);
             var anchors = doc.querySelectorAll("a[href*='/movie/']");
-            var bestMatch = null, bestScore = 0;
-
+            var matches = [];
             for (var ai = 0; ai < anchors.length; ai++) {
                 var href = anchors[ai].getAttribute("href");
                 var text = cleanText(anchors[ai].textContent);
@@ -778,58 +991,172 @@
                 if (parsed.title.toLowerCase() === searchTitle.toLowerCase()) score += 5;
                 else if (parsed.title.toLowerCase().indexOf(searchTitle.toLowerCase()) !== -1) score += 3;
                 if (parsed.year && searchYear && parsed.year === parseInt(searchYear, 10)) score += 2;
-                if (score > bestScore) {
-                    bestScore = score;
+
+                if (score >= 5) {
                     if (href.indexOf("/") !== 0) href = "/" + href;
-                    bestMatch = href;
+                    var dup = false;
+                    for (var mi = 0; mi < matches.length; mi++) {
+                        if (matches[mi].href === href) { dup = true; break; }
+                    }
+                    if (!dup) matches.push({ href: href, score: score });
                 }
             }
 
-            if (!bestMatch) return [];
+            if (matches.length === 0) {
+                for (var ai = 0; ai < anchors.length; ai++) {
+                    var href = anchors[ai].getAttribute("href");
+                    var text = cleanText(anchors[ai].textContent);
+                    if (!href || !text) continue;
 
-            // Scrape movie page for download links
-            var pageUrl = SKY_API + bestMatch;
-            var pr = await http_get(pageUrl, { headers: H_SKY });
-            if (!pr || !pr.body) return [];
+                    var parsed = skyParseTitle(text);
+                    var score = 0;
+                    if (parsed.title.toLowerCase().indexOf(searchTitle.toLowerCase()) !== -1) score += 3;
+                    if (parsed.year && searchYear && parsed.year === parseInt(searchYear, 10)) score += 2;
 
-            var anchors2 = parseHtml(pr.body).querySelectorAll("a");
-            var quality = 1080;
-            var qm = pr.body.match(/(\d{3,4})[pP]/);
-            if (qm) quality = parseInt(qm[1], 10);
+                    if (score >= 3) {
+                        if (href.indexOf("/") !== 0) href = "/" + href;
+                        var dup = false;
+                        for (var mi = 0; mi < matches.length; mi++) {
+                            if (matches[mi].href === href) { dup = true; break; }
+                        }
+                        if (!dup) matches.push({ href: href, score: score });
+                    }
+                }
+            }
+
+            if (matches.length === 0) return [];
+
+            // Scrape up to 3 matching pages for multiple qualities
+            matches.sort(function(a, b) { return b.score - a.score; });
+            var slicedMatches = matches.slice(0, 3);
 
             var results = [];
-            for (var bi = 0; bi < anchors2.length; bi++) {
-                var hr = anchors2[bi].getAttribute("href") || "";
-                var txt = cleanText(anchors2[bi].textContent);
-                if (!/howblogs\.xyz|tpead\.net|hubcloud|cinedrive|gdflix|hubdrive|filepress|gofile/i.test(hr)) continue;
+            var seenUrls = {};
+            var seenHr = {};
+            var seenCandidates = {};
 
-                if (hr.indexOf("howblogs.xyz") !== -1) {
-                    try {
-                        var hbr = await http_get(hr, { headers: H_SKY });
-                        if (hbr && hbr.body) {
-                            var hbdoc = parseHtml(hbr.body);
-                            var hbAs = hbdoc.querySelectorAll("a");
-                            for (var hi = 0; hi < hbAs.length; hi++) {
-                                var hbHref = hbAs[hi].getAttribute("href") || "";
-                                if (hbHref.indexOf("http") === 0 && !hbHref.includes("howblogs")) {
-                                    results.push(new StreamResult({
-                                        source: "SkyMoviesHD [Resolved]",
-                                        name: "SkyMoviesHD [" + txt + "]",
-                                        url: hbHref,
-                                        quality: quality,
-                                        headers: { "User-Agent": UA, "Referer": "https://howblogs.xyz/" }
-                                    }));
-                                }
-                            }
-                        }
-                    } catch (_) {}
+            // 1. Fetch all quality page HTML contents in parallel
+            var prs = await Promise.all(slicedMatches.map(function(match) {
+                return http_get(SKY_API + match.href, { headers: H_SKY });
+            }));
+
+            // 2. Extract anchors & details from all page bodies
+            var pageData = [];
+            for (var mi = 0; mi < prs.length; mi++) {
+                var pr = prs[mi];
+                if (!pr || !pr.body) continue;
+                var anchors2 = parseHtml(pr.body).querySelectorAll("a");
+                var quality = 1080;
+                var titleM = pr.body.match(/<title>([^<]+)<\/title>/i);
+                var qm = (titleM ? titleM[1] : "").match(/(\d{3,4})[pP]/);
+                if (qm) quality = parseInt(qm[1], 10);
+                pageData.push({ anchors: anchors2, quality: quality });
+            }
+
+            // 3. Collect unique HRs that need to be fetched (e.g. howblogs.xyz) and non-howblogs candidate URLs
+            var hrList = [];
+            var directCandidates = []; // For other direct links like voe, streamtape, pixeldrain, hubcloud
+            var hrToQualityAndText = {}; // To preserve quality & text when howblogs resolves
+
+            for (var pd = 0; pd < pageData.length; pd++) {
+                var anchors2 = pageData[pd].anchors;
+                var quality = pageData[pd].quality;
+                for (var bi = 0; bi < anchors2.length; bi++) {
+                    var hr = anchors2[bi].getAttribute("href") || "";
+                    var txt = cleanText(anchors2[bi].textContent);
+                    if (!/howblogs\.xyz|tpead\.net|hubcloud|cinedrive|gdflix|hubdrive|filepress|gofile|voe|streamtape|pixeldrain/i.test(hr)) continue;
+                    if (seenHr[hr]) continue;
+                    seenHr[hr] = true;
+
+                    if (hr.indexOf("howblogs.xyz") !== -1) {
+                        hrList.push(hr);
+                        hrToQualityAndText[hr] = { quality: quality, txt: txt };
+                    } else {
+                        directCandidates.push({ url: hr, quality: quality, txt: txt });
+                    }
+                }
+            }
+
+            // 4. Fetch all howblogs pages in parallel
+            var howblogsResponses = await Promise.all(hrList.map(function(hr) {
+                return http_get(hr, { headers: H_SKY }).then(function(res) {
+                    return { hr: hr, body: res ? (res.body || res.text || "") : "" };
+                });
+            }));
+
+            // 5. Parse howblogs bodies to get final candidate URLs
+            var allCandidates = []; // Array of { url, quality, txt }
+            for (var h = 0; h < howblogsResponses.length; h++) {
+                var hbr = howblogsResponses[h];
+                if (!hbr || !hbr.body) continue;
+                var meta = hrToQualityAndText[hbr.hr];
+                var hbdoc = parseHtml(hbr.body);
+                var hbAs = hbdoc.querySelectorAll("a");
+                for (var hi = 0; hi < hbAs.length; hi++) {
+                    var hbHref = hbAs[hi].getAttribute("href") || "";
+                    if (hbHref.indexOf("http") === 0 && !hbHref.includes("howblogs")) {
+                        allCandidates.push({ url: hbHref, quality: meta.quality, txt: meta.txt });
+                    }
+                }
+            }
+            // Add direct candidates
+            allCandidates = allCandidates.concat(directCandidates);
+
+            // 6. Deduplicate all candidates
+            var uniqueCandidates = [];
+            for (var c = 0; c < allCandidates.length; c++) {
+                var cand = allCandidates[c];
+                if (seenCandidates[cand.url]) continue;
+                seenCandidates[cand.url] = true;
+                uniqueCandidates.push(cand);
+            }
+
+            // 7. Resolve all direct streams in parallel!
+            var resolvedResults = await Promise.all(uniqueCandidates.map(function(cand) {
+                return resolveDirectStream(cand.url).then(function(streams) {
+                    return { cand: cand, streams: streams };
+                });
+            }));
+
+            // 8. Build final results
+            for (var r = 0; r < resolvedResults.length; r++) {
+                var cand = resolvedResults[r].cand;
+                var directStreams = resolvedResults[r].streams;
+                if (directStreams && directStreams.length > 0) {
+                    for (var ds = 0; ds < directStreams.length; ds++) {
+                        var sUrl = directStreams[ds].url;
+                        if (seenUrls[sUrl]) continue;
+                        seenUrls[sUrl] = true;
+                        var isParallel = (/pixeldrain|hubcloud|gdflix|hubdrive|filepress|gofile|cinedrive/i.test(sUrl) || /pixeldrain|hubcloud|gdflix|hubdrive|filepress|gofile|cinedrive/i.test(cand.url))
+                             && !/\.(m3u8|mpd|ts)($|\?)/i.test(sUrl) 
+                             && sUrl.indexOf("master.m3u8") === -1 
+                             && sUrl.indexOf("/hls2") === -1 
+                             && sUrl.indexOf("/urlset/") === -1;
+                        results.push(new StreamResult({
+                            source: "SkyMoviesHD [" + directStreams[ds].label + "]",
+                            name: "SkyMoviesHD [" + directStreams[ds].label + "]",
+                            url: sUrl,
+                            quality: cand.quality,
+                            headers: { "User-Agent": UA, "Referer": directStreams[ds].referer || (getBaseUrl(cand.url) + "/") },
+                            parallel: isParallel,
+                            skip_filter: directStreams[ds].skip_filter
+                        }));
+                    }
                 } else {
+                    if (seenUrls[cand.url]) continue;
+                    seenUrls[cand.url] = true;
+                    var isParallel = /pixeldrain|hubcloud|gdflix|hubdrive|filepress|gofile|cinedrive/i.test(cand.url) 
+                         && !/\.(m3u8|mpd|ts)($|\?)/i.test(cand.url) 
+                         && cand.url.indexOf("master.m3u8") === -1 
+                         && cand.url.indexOf("/hls2") === -1 
+                         && cand.url.indexOf("/urlset/") === -1;
                     results.push(new StreamResult({
-                        source: "SkyMoviesHD",
-                        name: "SkyMoviesHD [" + txt + "]",
-                        url: hr,
-                        quality: quality,
-                        headers: { "User-Agent": UA, "Referer": SKY_API + "/" }
+                        source: "SkyMoviesHD [" + cand.txt + "]",
+                        name: "SkyMoviesHD [" + cand.txt + "]",
+                        url: cand.url,
+                        quality: cand.quality,
+                        headers: { "User-Agent": UA, "Referer": SKY_API + "/" },
+                        parallel: isParallel
                     }));
                 }
             }
