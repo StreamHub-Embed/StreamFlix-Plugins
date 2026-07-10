@@ -3,7 +3,8 @@
 
     var BASE_URL = manifest && manifest.baseUrl ? manifest.baseUrl : 'https://vegamovies.market';
     var ROG_BASE_URL = 'https://rogmovies.cv';
-    var CINEMETA_URL = 'https://v3-cinemeta.strem.io/meta';
+    var TMDB_API = 'https://api.tmdb.org/3';
+    var TMDB_KEY = manifest && manifest.apiKey || '';
     var DYNAMIC_URLS = 'https://raw.githubusercontent.com/SaurabhKaperwan/Utils/refs/heads/main/urls.json';
 
     var HEADERS = {
@@ -167,6 +168,73 @@
             }
         }
         return links;
+    }
+
+    // Extract quality button links from movie page HTML (same patterns as loadStreams)
+    function findQualityButtons(html, pageUrl) {
+        if (!html) return [];
+        var btns = [];
+        var bs = getBaseUrl(pageUrl);
+        var bm;
+        var dwdRe = /<a[^>]*href="([^"]+)"[^>]*>(?:(?!<\/a>)[\s\S])*?<button[^>]*class="[^"]*dwd-button[^"]*"[^>]*>/gi;
+        while ((bm = dwdRe.exec(html)) !== null) { var u = fixUrl(bm[1]); if (u && u !== '#' && u !== '/' && u !== pageUrl && u !== bs + '/' && u !== bs) btns.push(u); }
+        if (btns.length === 0) {
+            var btnRe2 = /<a[^>]*href="([^"]+)"[^>]*>(?:(?!<\/a>)[\s\S])*?<button[^>]*class="[^"]*(?:dwd|btn|download|dl)[^"]*"[^>]*>/gi;
+            while ((bm = btnRe2.exec(html)) !== null) { var u2 = fixUrl(bm[1]); if (u2 && u2 !== '#' && u2 !== '/' && u2.indexOf(bs) !== 0 && u2 !== bs + '/' && u2 !== bs) btns.push(u2); }
+        }
+        if (btns.length === 0) {
+            var altRe = /<h[3456][^>]*>([\s\S]*?)<\/h[3456]>[\s\S]*?<a[^>]*href="([^"]*nexdrive[^"]*)"[^>]*>/gi;
+            var altM; while ((altM = altRe.exec(html)) !== null) btns.push(fixUrl(altM[2]));
+        }
+        if (btns.length === 0) {
+            var allLinks = findAllLinks(html);
+            for (var li = 0; li < allLinks.length; li++) { if (allLinks[li].indexOf('nexdrive') >= 0) btns.push(fixUrl(allLinks[li])); }
+        }
+        return btns;
+    }
+
+    // Resolve rogmovies V-Cloud/G-Direct links (replicates rogmovies plugin resolveVCloud + resolveVCloudGDirect)
+    async function resolveRogmoviesVc(vcUrl, quality, referer) {
+        try {
+            var url = vcUrl;
+            if (url.indexOf('api/index.php') >= 0) {
+                var r1 = await fetchUrl(url);
+                if (r1) {
+                    var aM = r1.match(/<div[^>]*class="[^"]*main[^"]*"[^>]*>[\s\S]*?<h4[^>]*>[\s\S]*?<a[^>]*href="([^"]+)"/i);
+                    if (aM) url = fixUrl(aM[1], vcUrl);
+                }
+            }
+            if (/fastdl\.icu/i.test(url)) {
+                var fHtml = await fetchUrl(url);
+                if (fHtml) {
+                    var vdM = fHtml.match(/<[^>]+id="vd"[^>]*href="([^"]+)"/i);
+                    if (vdM) return [{ url: vdM[1], name: 'ROGmovies [G-Direct]', source: 'ROGmovies [G-Direct]', quality: quality || 1080, headers: { Referer: referer || url } }];
+                }
+            }
+            var html = await fetchUrl(url);
+            if (!html) return [];
+            var b64m = html.match(/atob\(atob\('([^']+)'\)\)/);
+            var urlValue = '';
+            if (b64m) { try { urlValue = atob(atob(b64m[1])); } catch(_) {} }
+            if (!urlValue) {
+                var vm = html.match(/var\s+url\s*=\s*'([^']*)'/);
+                if (vm) urlValue = vm[1];
+            }
+            if (urlValue) {
+                var r2 = await fetchUrl(urlValue);
+                if (r2) {
+                    var cardM = r2.match(/<div[^>]*class="[^"]*card-body[^"]*"[^>]*>([\s\S]*?)<\/div>/i);
+                    if (cardM) {
+                        var aRe = /<a[^>]*href="([^"]+)"[^>]*>/gi;
+                        var results = []; var aM2; while ((aM2 = aRe.exec(cardM[1])) !== null) { if (aM2[1]) results.push({ url: aM2[1], name: 'ROGmovies [V-Cloud]', source: 'ROGmovies [V-Cloud]', quality: quality || 1080, headers: { Referer: referer || url } }); }
+                        if (results.length > 0) return results;
+                    }
+                }
+            }
+            var vdM = html.match(/<[^>]+id="vd"[^>]*href="([^"]+)"/i);
+            if (vdM) return [{ url: vdM[1], name: 'ROGmovies [G-Direct]', source: 'ROGmovies [G-Direct]', quality: quality || 1080, headers: { Referer: referer || url } }];
+            return [{ url: vcUrl, name: 'ROGmovies', source: 'ROGmovies', quality: quality || 1080, headers: { Referer: referer || url } }];
+        } catch(_) { return []; }
     }
 
     // Clean rogmovies post/page title — strip "Download", quality, audio, source junk
@@ -458,11 +526,10 @@
             var allResults = [];
             var seen = {};
 
-            for (var di = 0; di < domains.length; di++) {
-                var domain = domains[di];
+            await Promise.all(domains.map(async function(domain) {
                 try {
                     var rt = await fetchUrl(domain.base + '/search.php?q=' + encodeURIComponent(query) + '&page=1');
-                    if (!rt) continue;
+                    if (!rt) return;
                     var results = [];
                     try {
                         var json = JSON.parse(rt);
@@ -498,7 +565,7 @@
                         if (!seen[results[ri].url]) { seen[results[ri].url] = true; allResults.push(results[ri]); }
                     }
                 } catch (e) { /* skip failed domain */ }
-            }
+            }));
 
             cb({ success: true, data: allResults });
         } catch (e) { cb({ success: true, data: [] }); }
@@ -521,6 +588,38 @@
             // Title - Kotlin: document.select("title").text()
             var title = extractTagText(html, 'title');
             title = cleanTitle(title) || 'Unknown';
+
+            // Fire rogmovies search in background using cleaned title
+            var rogP = (async function() {
+                try {
+                    var q = encodeURIComponent((title || '').replace(/\s*\(.*?\)/g, '').trim());
+                    if (!q) return '';
+                    var sh = await fetchUrl(ROG_BASE_URL + '/search.php?q=' + q + '&page=1');
+                    if (!sh) return '';
+                    var qL = decodeURIComponent(q).toLowerCase();
+                    try {
+                        var sj = JSON.parse(sh);
+                        if (sj && sj.hits && sj.hits.length > 0) {
+                            for (var hi = 0; hi < sj.hits.length; hi++) {
+                                var d = sj.hits[hi].document || {};
+                                var pt = (d.post_title || '').toLowerCase();
+                                if (pt.indexOf(qL) >= 0) {
+                                    var pl = d.permalink || '';
+                                    return pl.indexOf('://') >= 0 ? pl : ROG_BASE_URL + (pl.indexOf('/') === 0 ? pl : '/' + pl);
+                                }
+                            }
+                        }
+                    } catch(e) {}
+                    var aRe = /<a[^>]*href="([^"]+)"[^>]*>(?:(?!<\/a>)[\s\S])*?<img[^>]+alt="([^"]*)"[^>]*>/gi;
+                    var aM;
+                    while ((aM = aRe.exec(sh)) !== null) {
+                        if (aM[2].toLowerCase().indexOf(qL) >= 0) {
+                            return aM[1].indexOf('://') >= 0 ? aM[1] : ROG_BASE_URL + (aM[1].indexOf('/') === 0 ? aM[1] : '/' + aM[1]);
+                        }
+                    }
+                } catch(e) {}
+                return '';
+            })();
 
             // Poster: try multiple patterns for rogmovies
             var poster = '';
@@ -583,22 +682,36 @@
                 }
             }
 
-            // Fire cinemeta async — resolves during intermediate page fetches
+            // Fire TMDB enrichment async — resolves during intermediate page fetches
             var genres = [], imdbRating = '', year = '';
-            // Fallback: if no imdbId on page, search cinemeta catalog by title
-            if (!imdbId && title) {
+            var metaP = (async function() {
                 try {
-                    var searchKey = encodeURIComponent(title.replace(/\s*\(.*?\)/g, '').trim());
-                    var catRes = await fetchJson('https://v3-cinemeta.strem.io/catalog/' + (isSeries ? 'series' : 'movie') + '/top/search=' + searchKey + '.json');
-                    if (catRes && catRes.metas && catRes.metas.length > 0) {
-                        var best = catRes.metas[0];
-                        if (best.name && (best.name.toLowerCase() === title.toLowerCase() || best.name.toLowerCase().indexOf(title.toLowerCase()) >= 0 || title.toLowerCase().indexOf(best.name.toLowerCase()) >= 0)) {
-                            imdbId = best.id;
+                    var tid = null, mt = isSeries ? 'tv' : 'movie';
+                    if (imdbId) {
+                        var fu = TMDB_API + '/find/' + imdbId + '?external_source=imdb_id';
+                        if (TMDB_KEY) fu += '&api_key=' + TMDB_KEY;
+                        var fr = await fetchJson(fu);
+                        if (fr) {
+                            var rs = fr[mt === 'tv' ? 'tv_results' : 'movie_results'];
+                            if (rs && rs.length > 0) tid = rs[0].id;
                         }
                     }
-                } catch (e) {}
-            }
-            var cinemetaP = imdbId ? fetchJson(CINEMETA_URL + '/' + (isSeries ? 'series' : 'movie') + '/' + imdbId + '.json') : Promise.resolve(null);
+                    if (!tid && title) {
+                        var sk = encodeURIComponent(title.replace(/\s*\(.*?\)/g, '').trim());
+                        var su = TMDB_API + '/search/' + mt + '?query=' + sk;
+                        if (TMDB_KEY) su += '&api_key=' + TMDB_KEY;
+                        var sr = await fetchJson(su);
+                        if (sr && sr.results && sr.results.length > 0) tid = sr.results[0].id;
+                    }
+                    if (tid) {
+                        var du = TMDB_API + '/' + mt + '/' + tid + '?append_to_response=credits,external_ids';
+                        if (TMDB_KEY) du += '&api_key=' + TMDB_KEY;
+                        var dr = await fetchJson(du);
+                        return dr;
+                    }
+                } catch(e) {}
+                return null;
+            })();
 
             // === EPISODES ===
             var episodes = [];
@@ -660,18 +773,39 @@
                 }
             }
 
-            // Await cinemeta (likely resolved during intermediate fetches)
+            // Await TMDB metadata (likely resolved during intermediate fetches)
             try {
-                var cRes = await cinemetaP;
-                if (cRes && cRes.meta) {
-                    title = cRes.meta.name || title;
-                    description = cRes.meta.description || description;
-                    genres = cRes.meta.genre || [];
-                    imdbRating = cRes.meta.imdbRating || '';
-                    year = cRes.meta.year || '';
-                    if (cRes.meta.poster) poster = cRes.meta.poster;
+                var tRes = await metaP;
+                if (tRes) {
+                    title = tRes.title || tRes.name || title;
+                    description = tRes.overview || description;
+                    genres = Array.isArray(tRes.genres) ? tRes.genres.map(function(g) { return g.name; }) : [];
+                    imdbRating = tRes.vote_average ? String(tRes.vote_average) : '';
+                    year = (tRes.release_date || tRes.first_air_date || '').split('-')[0] || year;
+                    if (tRes.poster_path) poster = 'https://image.tmdb.org/t/p/w500' + tRes.poster_path;
+                    if (tRes.external_ids && tRes.external_ids.imdb_id) imdbId = tRes.external_ids.imdb_id;
+                    var rawCast = (tRes.credits && tRes.credits.cast) || [];
+                    var castList = rawCast.slice(0, 15).map(function(c) { return new Actor({ name: c.name, image: c.profile_path ? 'https://image.tmdb.org/t/p/w500' + c.profile_path : null, role: c.character }); });
                 }
             } catch (e) {}
+
+            // Fetch episode stills from TMDB (1 call per season)
+            var stillMap = {};
+            if (isSeries && tRes && tRes.id) {
+                var seasonSet = {};
+                Object.keys(epMap).forEach(function(k) { seasonSet[parseInt(k.split('_')[0]) || 1] = true; });
+                await Promise.all(Object.keys(seasonSet).map(function(sn) {
+                    return (async function() {
+                        try {
+                            var su = TMDB_API + '/tv/' + tRes.id + '/season/' + sn + (TMDB_KEY ? '?api_key=' + TMDB_KEY : '');
+                            var sd = await fetchJson(su);
+                            if (sd && sd.episodes) sd.episodes.forEach(function(ep) {
+                                if (ep.still_path) stillMap[sn + '_' + ep.episode_number] = 'https://image.tmdb.org/t/p/w500' + ep.still_path;
+                            });
+                        } catch(e) {}
+                    })();
+                }));
+            }
 
             // Build episodes with enriched poster
             if (isSeries) {
@@ -691,15 +825,20 @@
                         url: epUrl,
                         season: sn,
                         episode: en,
-                        posterUrl: poster || '',
+                        posterUrl: stillMap[sn + '_' + en] || poster || '',
                         description: description || ''
                     });
                 }
                 episodes.sort(function(a, b) { if (a.season !== b.season) return a.season - b.season; return a.episode - b.episode; });
             } else {
+                var rogUrl = await rogP;
+                var movieUrl = pageUrl || '';
+                if (rogUrl) {
+                    movieUrl += (movieUrl.indexOf('?') >= 0 ? '&' : '?') + 'rog_url=' + encodeURIComponent(rogUrl);
+                }
                 episodes.push({
                     name: 'Play',
-                    url: pageUrl || '',
+                    url: movieUrl,
                     season: 1,
                     episode: 1,
                     posterUrl: poster || '',
@@ -718,7 +857,9 @@
                 year: yearVal,
                 score: scoreVal,
                 genres: genres.length > 0 ? genres : undefined,
-                episodes: episodes
+                cast: castList && castList.length > 0 ? castList : undefined,
+                episodes: episodes,
+                imdb_id: imdbId || undefined
             }) });
         } catch (e) {
             cb({ success: false, errorCode: 'PARSE_ERROR', message: String(e) });
@@ -833,37 +974,111 @@
                 }
             }
 
-            if (btns.length === 0) { cb({ success: true, data: [] }); return; }
+            if (btns.length === 0 && url.indexOf('rog_url=') < 0) { cb({ success: true, data: [] }); return; }
+
+            // Detect rogmovies parallel source
+            var rogUrl = '';
+            var rogMatch = url.match(/[?&]rog_url=([^&]+)/);
+            if (rogMatch) {
+                rogUrl = decodeURIComponent(rogMatch[1]);
+            }
 
             var allStreams = [];
-            for (var bi = 0; bi < btns.length; bi++) {
-                try {
-                    var dlH = await withTimeout(function() { return fetchUrl(btns[bi]); }, 30000);
-                    if (!dlH) continue;
-                    var btnSources = findBtnSources(dlH);
-                    if (btnSources.length > 0) {
-                        for (var bsi = 0; bsi < btnSources.length; bsi++) {
-                            var qSt = await withTimeout(function() { return extractSingleVc(fixUrl(btnSources[bsi], getBaseUrl(btns[bi])), btns[bi]); }, 60000);
-                            for (var si = 0; si < qSt.length; si++) allStreams.push(qSt[si]);
-                        }
-                    } else {
-                        var best = findBestVcLink(dlH);
-                        if (best) {
-                            var qSt = await withTimeout(function() { return extractSingleVc(fixUrl(best, getBaseUrl(btns[bi])), btns[bi]); }, 60000);
-                            for (var si = 0; si < qSt.length; si++) allStreams.push(qSt[si]);
-                        } else {
-                            var nxLinks = findAllLinks(dlH);
-                            for (var nli = 0; nli < nxLinks.length; nli++) {
-                                var nl = nxLinks[nli].toLowerCase();
-                                if (nl.indexOf('vcloud') >= 0 || nl.indexOf('hubcloud') >= 0 || nl.indexOf('fastdl') >= 0 || nl.indexOf('nexdrive') >= 0) {
-                                    var fSt = await withTimeout(function() { return extractSingleVc(fixUrl(nxLinks[nli], getBaseUrl(btns[bi])), btns[bi]); }, 60000);
-                                    for (var si = 0; si < fSt.length; si++) allStreams.push(fSt[si]);
+            var promises = [];
+
+            // Vegamovies button processing
+            if (btns.length > 0) {
+                promises.push((async function() {
+                    var localStreams = [];
+                    var btnPromises = btns.map(async function(btn) {
+                        var streams = [];
+                        try {
+                            var dlH = await withTimeout(function() { return fetchUrl(btn); }, 30000);
+                            if (!dlH) return streams;
+                            var btnSources = findBtnSources(dlH);
+                            if (btnSources.length > 0) {
+                                for (var bsi = 0; bsi < btnSources.length; bsi++) {
+                                    var qSt = await withTimeout(function() { return extractSingleVc(fixUrl(btnSources[bsi], getBaseUrl(btn)), btn); }, 60000);
+                                    if (qSt) qSt.forEach(function(s) { if (streams.indexOf(s) < 0) streams.push(s); });
+                                }
+                            } else {
+                                var best = findBestVcLink(dlH);
+                                if (best) {
+                                    var qSt = await withTimeout(function() { return extractSingleVc(fixUrl(best, getBaseUrl(btn)), btn); }, 60000);
+                                    if (qSt) qSt.forEach(function(s) { if (streams.indexOf(s) < 0) streams.push(s); });
+                                } else {
+                                    var nxLinks = findAllLinks(dlH);
+                                    for (var nli = 0; nli < nxLinks.length; nli++) {
+                                        var nl = nxLinks[nli].toLowerCase();
+                                        if (nl.indexOf('vcloud') >= 0 || nl.indexOf('hubcloud') >= 0 || nl.indexOf('fastdl') >= 0 || nl.indexOf('nexdrive') >= 0) {
+                                            var fSt = await withTimeout(function() { return extractSingleVc(fixUrl(nxLinks[nli], getBaseUrl(btn)), btn); }, 60000);
+                                            if (fSt) fSt.forEach(function(s) { if (streams.indexOf(s) < 0) streams.push(s); });
+                                        }
+                                    }
                                 }
                             }
-                        }
-                    }
-                } catch (e) { /* skip failed quality */ }
+                        } catch (e) { /* skip failed quality */ }
+                        return streams;
+                    });
+                    var results = await Promise.all(btnPromises);
+                    results.forEach(function(s) { s.forEach(function(st) { if (localStreams.indexOf(st) < 0) localStreams.push(st); }); });
+                    return localStreams;
+                })());
             }
+
+            // Rogmovies page processing in parallel
+            if (rogUrl) {
+                promises.push((async function() {
+                    var rogStreams = [];
+                    try {
+                        var rogHtml = await withTimeout(function() { return fetchUrl(rogUrl); }, 30000);
+                        if (!rogHtml) return rogStreams;
+                        var dwdRe = /<a[^>]*href="([^"]+)"[^>]*>(?:(?!<\/a>)[\s\S])*?<button[^>]*class="[^"]*dwd-button[^"]*"[^>]*>/gi;
+                        var dwdItems = [];
+                        var dwdSeen = {};
+                        var bm2;
+                        while ((bm2 = dwdRe.exec(rogHtml)) !== null) {
+                            var hr = fixUrl(bm2[1]);
+                            if (hr && !dwdSeen[hr]) { dwdSeen[hr] = true; dwdItems.push(hr); }
+                        }
+                        var rogQuality = 1080;
+                        var qM = rogHtml.match(/<h[3456][^>]*>[\s\S]{0,200}?(\d{3,4})p/i);
+                        if (qM) rogQuality = parseInt(qM[1], 10);
+                        var nexPromises = dwdItems.map(async function(nexUrl) {
+                            var itemStreams = [];
+                            try {
+                                var nexHtml = await withTimeout(function() { return fetchUrl(nexUrl); }, 30000);
+                                if (!nexHtml) return itemStreams;
+                                var btnRe = /<a[^>]*href="([^"]+)"[^>]*>(?:(?!<\/a>)[\s\S])*?<button[^>]*class="[^"]*\bbtn\b[^"]*"[^>]*>([\s\S]*?)<\/button>(?:(?!<\/a>)[\s\S])*?<\/a>/gi;
+                                var btnM;
+                                while ((btnM = btnRe.exec(nexHtml)) !== null) {
+                                    if (/V-Cloud|G-Direct/i.test(stripHtml(btnM[2]))) {
+                                        var vcUrl = fixUrl(btnM[1]);
+                                        if (vcUrl) {
+                                            var resolved = await resolveRogmoviesVc(vcUrl, rogQuality, nexUrl);
+                                            resolved.forEach(function(s) { if (itemStreams.indexOf(s) < 0) itemStreams.push(s); });
+                                        }
+                                    }
+                                }
+                                if (itemStreams.length === 0) {
+                                    var bestL = findBestVcLink(nexHtml);
+                                    if (bestL) {
+                                        var st3 = await extractSingleVc(fixUrl(bestL, getBaseUrl(nexUrl)), nexUrl);
+                                        st3.forEach(function(s) { if (itemStreams.indexOf(s) < 0) itemStreams.push(s); });
+                                    }
+                                }
+                            } catch(e) {}
+                            return itemStreams;
+                        });
+                        var nexResults = await Promise.all(nexPromises);
+                        nexResults.forEach(function(s) { s.forEach(function(st) { if (rogStreams.indexOf(st) < 0) rogStreams.push(st); }); });
+                    } catch(e) {}
+                    return rogStreams;
+                })());
+            }
+
+            var results = await Promise.all(promises);
+            results.forEach(function(streams) { streams.forEach(function(st) { allStreams.push(st); }); });
 
             cb({ success: true, data: allStreams });
         } catch (e) { cb({ success: true, data: [] }); }
