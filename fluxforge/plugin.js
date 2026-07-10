@@ -1,5 +1,7 @@
 (function() {
-    var TMDB_API = "https://db.videasy.to/3";
+    var tmdbBase = manifest && manifest.baseUrl || "https://api.tmdb.org";
+    var tmdbKey = manifest && manifest.apiKey || "";
+    var TMDB_API = tmdbBase + "/3" + (tmdbKey ? "?api_key=" + tmdbKey : "");
     var TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p";
     var UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
     var HEADERS = { "User-Agent": UA, "Accept": "application/json" };
@@ -7,10 +9,11 @@
     // ───── Provider header presets (from Kotlin extractors) ─────
     var H_VAPLAYER = { "Referer": "https://nextgencloudfabric.com/", "User-Agent": UA };
     var H_VIDLINK  = { "Origin": "https://vidlink.pro", "Referer": "https://vidlink.pro/", "User-Agent": UA };
-    var H_VIDEASY  = { "Origin": "https://player.videasy.net", "Referer": "https://player.videasy.net/", "Accept": "*/*", "User-Agent": UA };
+    var H_VIDEASY  = { "Origin": "https://player.videasy.to", "Referer": "https://player.videasy.to/", "Accept": "*/*", "User-Agent": UA };
     var H_VIDROCK  = { "Origin": "https://vidrock.ru", "User-Agent": UA };
-    var H_VIDFAST  = { "Referer": "https://vidfast.pro/", "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36", "X-Requested-With": "XMLHttpRequest" };
+    var H_VIDFAST  = { "Referer": "https://vidfast.pro/", "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36", "X-Requested-With": "XMLHttpRequest", "Accept": "*/*" };
     var H_RIVESTREAM = { "User-Agent": UA };
+    var H_VIDSYNC   = { "Origin": "https://vidsync.xyz", "Referer": "https://vidsync.xyz/", "User-Agent": UA, "X-Requested-With": "XMLHttpRequest", "Accept": "*/*" };
 
     // ───── SkyMoviesHD Config ─────
     var SKY_API = "https://skymovieshd.ceo";
@@ -129,10 +132,13 @@
             var details = await fetchJson(TMDB_API + "/" + ep + "/" + tmdbId + "?append_to_response=credits,external_ids");
             if (!details) return cb({ success: false, errorCode: "NOT_FOUND", message: "" });
 
-            var cast = (details.credits && details.credits.cast || []).slice(0, 15).map(function(c) {
-                try { return new Actor({ name: c.name, image: tmdbImage(c.profile_path, "w185"), role: c.character }); }
-                catch (_) { return null; }
-            }).filter(Boolean);
+            var cast = (details.credits && details.credits.cast || [])
+                .filter(function(c) { return c.name && c.profile_path; })
+                .slice(0, 15)
+                .map(function(c) {
+                    try { return { name: c.name, image: tmdbImage(c.profile_path, "w185"), role: c.character || "" }; }
+                    catch (_) { return null; }
+                }).filter(Boolean);
             var imdbId = (details.external_ids && details.external_ids.imdb_id) || "";
             var genres = Array.isArray(details.genres) ? details.genres.map(function(g) { return g.name; }) : [];
             var logoUrl = imdbId ? "https://live.metahub.space/logo/medium/" + imdbId + "/img" : undefined;
@@ -246,7 +252,7 @@
         } catch (_) { return []; }
     }
 
-    // ───── Provider: VidEasy ─────
+    // ───── Provider: VidEasy (api.wingsdatabase.com) ─────
     async function fetchVidEasy(tmdbId, season, episode) {
         try {
             var details = await fetchJson(TMDB_API + "/" + (season == null ? "movie" : "tv") + "/" + tmdbId + "?append_to_response=external_ids");
@@ -256,30 +262,33 @@
             var imdbId = details.external_ids && details.external_ids.imdb_id;
             var imdb = imdbId != null ? imdbId : "";
 
-            var servers = [
-                "myflixerzupcloud","1movies","moviebox","primewire","m4uhd","hdmovie",
-                "cdn","primesrcme","visioncine","overflix","superflix","cuevana",
-                "lamovie","mb-flix"
-            ];
+            // Step 1: Get seed from wingsdatabase
+            var seedUrl = "https://api.wingsdatabase.com/seed?mediaId=" + tmdbId;
+            var seedResp = await http_get(seedUrl, { headers: { "Origin": "https://player.videasy.to", "Referer": "https://player.videasy.to/", "User-Agent": UA } });
+            if (!seedResp || !seedResp.body) return [];
+            var seedData = JSON.parse(seedResp.body);
+            var seed = seedData.seed;
+            var enc = "2";
+
+            // Step 2: Query each wing server
+            var servers = ["jett", "cdn", "tejo", "neon2", "ym", "downloader2", "m4uhd", "hdmovie", "meine", "lamovie", "superflix"];
             var q = function(t) { return encodeURIComponent(t).replace(/%20/g, "%20"); };
             var encTitle = q(q(title));
 
             var results = [];
+            var wingHeaders = { "User-Agent": UA, "Origin": "https://player.videasy.to", "Referer": "https://player.videasy.to/" };
+
             await Promise.all(servers.map(async function(srv) {
                 try {
-                    var srcUrl = "https://api.videasy.net/" + srv + "/sources-with-title?title=" + encTitle + "&mediaType=" + (season == null ? "movie" : "tv") + "&tmdbId=" + tmdbId + "&imdbId=" + imdb + "&year=" + year;
-                    if (season != null) {
-                        srcUrl += "&episodeId=" + episode + "&seasonId=" + season;
-                    }
+                    var srcUrl = "https://api.wingsdatabase.com/" + srv + "/sources-with-title?title=" + encTitle + "&mediaType=" + (season == null ? "movie" : "tv") + "&year=" + year + "&tmdbId=" + tmdbId + "&imdbId=" + imdb + "&enc=" + enc + "&seed=" + seed;
+                    if (season != null) srcUrl += "&episodeId=" + episode + "&seasonId=" + season;
 
-                    var encResp = await http_get(srcUrl, { headers: {
-                        "User-Agent": UA, "Origin": "https://player.videasy.net", "Referer": "https://player.videasy.net/"
-                    }});
+                    var encResp = await http_get(srcUrl, { headers: wingHeaders });
                     if (!encResp || !encResp.body || encResp.status !== 200) return;
 
                     var decResp = await http_post("https://enc-dec.app/api/dec-videasy", {
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ text: encResp.body, id: parseInt(tmdbId, 10) })
+                        body: JSON.stringify({ text: encResp.body, id: parseInt(tmdbId, 10), seed: seed })
                     });
                     if (!decResp || !decResp.body) return;
                     var decJson = JSON.parse(decResp.body);
@@ -295,7 +304,7 @@
                                 name: "VidEasy [" + srv.toUpperCase() + " " + qLabel(q) + "]",
                                 url: src.url,
                                 quality: q,
-                                headers: H_VIDEASY
+                                headers: { "User-Agent": UA, "Referer": "https://player.videasy.to/" }
                             }));
                         }
                     }
@@ -341,15 +350,17 @@
     }
     function bytesToStr(bytes) { var s = ""; for (var i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]); return s; }
 
+    function rawBytes(str) { var b = new Uint8Array(str.length); for (var i = 0; i < str.length; i++) b[i] = str.charCodeAt(i) & 0xFF; return b; }
+
     async function vidrockEncrypt(keyB64, plaintext) {
         try {
             if (globalThis.crypto && globalThis.crypto.subtle && globalThis.crypto.subtle.encrypt) {
                 var keyStr = atob(keyB64);
-                var keyBytes = new Uint8Array(strToBytes(keyStr));
-                var iv = keyBytes.slice(0, 16);
-                var ptBytes = new Uint8Array(strToBytes(plaintext));
-                var key = await globalThis.crypto.subtle.importKey("raw", keyBytes, { name: "AES-CBC" }, false, ["encrypt"]);
-                var enc = await globalThis.crypto.subtle.encrypt({ name: "AES-CBC", iv: iv }, key, ptBytes);
+                var rawKey = rawBytes(keyStr);
+                var rawIv = rawKey.slice(0, 16);
+                var ptBytes = new TextEncoder().encode(plaintext);
+                var key = await globalThis.crypto.subtle.importKey("raw", rawKey, { name: "AES-CBC" }, false, ["encrypt"]);
+                var enc = await globalThis.crypto.subtle.encrypt({ name: "AES-CBC", iv: rawIv }, key, ptBytes);
                 var b64 = btoa(bytesToStr(new Uint8Array(enc)));
                 return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
             }
@@ -416,7 +427,7 @@
                     if (!data) return;
 
                     var streamUrl = result.stream + "/" + data;
-                    var streamRes = await http_post(streamUrl, { headers: baseHeaders });
+                    var streamRes = await http_post(streamUrl, { headers: baseHeaders, body: "" });
                     if (!streamRes || !streamRes.body) return;
 
                     var decStreamRes = await http_post(api + "/dec-vidfast", {
@@ -1128,9 +1139,9 @@
                         if (seenUrls[sUrl]) continue;
                         seenUrls[sUrl] = true;
                         var isParallel = (/pixeldrain|hubcloud|gdflix|hubdrive|filepress|gofile|cinedrive/i.test(sUrl) || /pixeldrain|hubcloud|gdflix|hubdrive|filepress|gofile|cinedrive/i.test(cand.url))
-                             && !/\.(m3u8|mpd|ts)($|\?)/i.test(sUrl) 
-                             && sUrl.indexOf("master.m3u8") === -1 
-                             && sUrl.indexOf("/hls2") === -1 
+                             && !/\.(m3u8|mpd|ts)($|\?)/i.test(sUrl)
+                             && sUrl.indexOf("master.m3u8") === -1
+                             && sUrl.indexOf("/hls2") === -1
                              && sUrl.indexOf("/urlset/") === -1;
                         results.push(new StreamResult({
                             source: "SkyMoviesHD [" + directStreams[ds].label + "]",
@@ -1145,10 +1156,10 @@
                 } else {
                     if (seenUrls[cand.url]) continue;
                     seenUrls[cand.url] = true;
-                    var isParallel = /pixeldrain|hubcloud|gdflix|hubdrive|filepress|gofile|cinedrive/i.test(cand.url) 
-                         && !/\.(m3u8|mpd|ts)($|\?)/i.test(cand.url) 
-                         && cand.url.indexOf("master.m3u8") === -1 
-                         && cand.url.indexOf("/hls2") === -1 
+                    var isParallel = /pixeldrain|hubcloud|gdflix|hubdrive|filepress|gofile|cinedrive/i.test(cand.url)
+                         && !/\.(m3u8|mpd|ts)($|\?)/i.test(cand.url)
+                         && cand.url.indexOf("master.m3u8") === -1
+                         && cand.url.indexOf("/hls2") === -1
                          && cand.url.indexOf("/urlset/") === -1;
                     results.push(new StreamResult({
                         source: "SkyMoviesHD [" + cand.txt + "]",
@@ -1163,6 +1174,145 @@
 
             return results;
         } catch (_) { return []; }
+    }
+
+    // ───── Provider: VidCore ─────
+    async function fetchVidCore(tmdbId, season, episode) {
+        try {
+            var api = "https://enc-dec.app/api";
+            var baseUrl = season == null
+                ? "https://vidcore.net/movie/" + tmdbId
+                : "https://vidcore.net/tv/" + tmdbId + "/" + season + "/" + episode;
+            var pageRes = await http_get(baseUrl, { headers: { "User-Agent": UA, "Referer": "https://vidcore.net/", "X-Requested-With": "XMLHttpRequest" } });
+            if (!pageRes || !pageRes.body) return [];
+            var encMatch = pageRes.body.match(/\\"en\\":\\"(.*?)\\"/);
+            if (!encMatch) return [];
+            var text = encMatch[1];
+
+            var encRes = await http_get(api + "/enc-vidcore?text=" + encodeURIComponent(text), { headers: { "User-Agent": UA } });
+            if (!encRes || !encRes.body) return [];
+            var parts = JSON.parse(encRes.body);
+            if (parts.status !== 200) return [];
+            var servers = parts.result.servers;
+            var stream = parts.result.stream;
+            var token = parts.result.token;
+            var version = parts.result.version || "1";
+
+            var baseHeaders = { "User-Agent": UA, "Referer": "https://vidcore.net/", "X-Requested-With": "XMLHttpRequest", "X-CSRF-Token": token };
+
+            var serversEnc = await http_post(servers, { headers: baseHeaders });
+            if (!serversEnc || !serversEnc.body) return [];
+
+            var decRes = await http_post(api + "/dec-vidcore", {
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ text: serversEnc.body, version: version })
+            });
+            if (!decRes || !decRes.body) return [];
+            var serversDec = JSON.parse(decRes.body);
+            if (serversDec.status !== 200) return [];
+            var serversList = serversDec.result;
+            if (!Array.isArray(serversList)) return [];
+
+            var results = [];
+            await Promise.all(serversList.map(async function(srv) {
+                try {
+                    var name = srv.name || "Server";
+                    var data = srv.data;
+                    if (!data) return;
+                    var streamUrl = stream + "/" + data;
+                    var streamEnc = await http_post(streamUrl, { headers: baseHeaders, body: "" });
+                    if (!streamEnc || !streamEnc.body) return;
+
+                    var decStreamRes = await http_post(api + "/dec-vidcore", {
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ text: streamEnc.body, version: version })
+                    });
+                    if (!decStreamRes || !decStreamRes.body) return;
+                    var decStream = JSON.parse(decStreamRes.body);
+                    if (decStream.status !== 200) return;
+                    var finalUrl = decStream.result && decStream.result.url;
+                    if (!finalUrl) return;
+                    results.push(new StreamResult({ source: "VidCore [" + name + " - 1080p]", name: "VidCore [" + name + "]", url: finalUrl, quality: 1080, headers: { "Referer": "https://vidcore.net/" } }));
+                } catch (_) {}
+            }));
+            return results;
+        } catch (_) { return []; }
+    }
+
+    // ───── Provider: VidSync ─────
+    var VIDSYNC_SERVERS = ["cinevault", "cinedub", "cinebox", "cineflix", "cinevip", "cinecloud", "cine4k"];
+    async function fetchVidSync(tmdbId, season, episode) {
+        try {
+            var api = "https://enc-dec.app/api";
+            var details = await fetchJson(TMDB_API + "/" + (season == null ? "movie" : "tv") + "/" + tmdbId + "?append_to_response=external_ids");
+            if (!details) return [];
+            var title = details.title || details.name || "";
+            var year = (details.release_date || details.first_air_date || "").split("-")[0];
+            if (!title || !year) return [];
+
+            var tokenResp = await http_get(api + "/enc-vidsync", { headers: HEADERS });
+            if (!tokenResp || !tokenResp.body) return [];
+            var tokenData = JSON.parse(tokenResp.body);
+            if (tokenData.status !== 200) return [];
+            var turnstileToken = tokenData.result && tokenData.result.token;
+            if (!turnstileToken) return [];
+
+            var qTitle = encodeURIComponent(title).replace(/%20/g, "+");
+            var mediaType = season == null ? "movie" : "tv";
+            var baseHeaders = { "User-Agent": UA, "Origin": "https://vidsync.xyz", "Referer": "https://vidsync.xyz/", "X-Requested-With": "XMLHttpRequest", "Accept": "*/*", "X-Cf-Turnstile": turnstileToken };
+
+            var results = [];
+            await Promise.all(VIDSYNC_SERVERS.map(async function(server) {
+                try {
+                    var fetchUrl = "https://vidsync.xyz/api/stream/fetch?title=" + qTitle + "&type=" + mediaType + "&releaseYear=" + year + "&mediaId=" + tmdbId + "&serverName=" + server;
+                    if (season != null) fetchUrl += "&season=" + season + "&episode=" + episode;
+
+                    var encResp = await http_get(fetchUrl, { headers: baseHeaders });
+                    if (!encResp || !encResp.body) return;
+
+                    var decResp = await http_post(api + "/dec-vidsync", {
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ text: encResp.body, id: tmdbId })
+                    });
+                    if (!decResp || !decResp.body) return;
+                    var decData = JSON.parse(decResp.body);
+                    if (decData.status !== 200) return;
+                    var streamData = decData.result;
+                    if (!streamData) return;
+
+                    var url = typeof streamData === "string" ? streamData : (streamData.url || streamData.file || "");
+                    if (url) {
+                        results.push(new StreamResult({ source: "VidSync [" + server.toUpperCase() + " - 1080p]", name: "VidSync [" + server.toUpperCase() + "]", url: url, quality: 1080, headers: H_VIDSYNC }));
+                    }
+                } catch (_) {}
+            }));
+            return results;
+        } catch (_) { return []; }
+    }
+
+    // ─ Provider timeout + circuit breaker ─────
+    var FLUX_TIMEOUT_MS = 12000;
+    var FLUX_MAX_FAILURES = 2;
+
+    function fluxTimeout(promise, ms) {
+        return Promise.race([
+            promise,
+            new Promise(function(r) { setTimeout(function() { r([]); }, ms); })
+        ]);
+    }
+
+    function fluxStream(providerFn, name, failMap) {
+        return function() {
+            if ((failMap[name] || 0) >= FLUX_MAX_FAILURES) return Promise.resolve([]);
+            return fluxTimeout(providerFn.apply(null, arguments), FLUX_TIMEOUT_MS).then(function(r) {
+                if (!r || (Array.isArray(r) && r.length === 0)) {
+                    failMap[name] = (failMap[name] || 0) + 1;
+                } else {
+                    failMap[name] = 0;
+                }
+                return r;
+            });
+        };
     }
 
     // ───── loadStreams ─────
@@ -1191,27 +1341,43 @@
             var details = await fetchJson(TMDB_API + "/" + (season == null ? "movie" : "tv") + "/" + tmdbId + "?append_to_response=external_ids");
             if (details && details.external_ids && details.external_ids.imdb_id) imdbId = details.external_ids.imdb_id;
 
-            var results = [];
-            var providerCalls = [
-                fetchVaplayer(tmdbId, season, episode),
-                fetchVidlink(tmdbId, season, episode),
-                fetchVidEasy(tmdbId, season, episode),
-                fetchVidrock(tmdbId, season, episode),
-                fetchRiveStream(tmdbId, season, episode),
-                fetch2embed(imdbId, season, episode),
-                fetchVidSrcXyz(imdbId, season, episode),
-                fetchSkyMoviesHD(tmdbId, season, episode)
-            ];
-            try { providerCalls.push(fetchVidFast(tmdbId, season, episode)); } catch(_) {}
+            var failMap = {};
+            var wrappedVaplayer = fluxStream(fetchVaplayer, "Vaplayer", failMap);
+            var wrappedVidlink = fluxStream(fetchVidlink, "Vidlink", failMap);
+            var wrappedVidEasy = fluxStream(fetchVidEasy, "VidEasy", failMap);
+            var wrappedVidrock = fluxStream(fetchVidrock, "Vidrock", failMap);
+            var wrappedRiveStream = fluxStream(fetchRiveStream, "RiveStream", failMap);
+            var wrapped2embed = fluxStream(fetch2embed, "2embed", failMap);
+            var wrappedVidSrcXyz = fluxStream(fetchVidSrcXyz, "VidSrcXyz", failMap);
+            var wrappedSkyMoviesHD = fluxStream(fetchSkyMoviesHD, "SkyMoviesHD", failMap);
+            var wrappedVidFast = fluxStream(fetchVidFast, "VidFast", failMap);
+            var wrappedVidCore = fluxStream(fetchVidCore, "VidCore", failMap);
+            var wrappedVidSync = fluxStream(fetchVidSync, "VidSync", failMap);
 
-            var providerResults = await Promise.all(providerCalls);
+            var providerCalls = [
+                wrappedVaplayer(tmdbId, season, episode),
+                wrappedVidlink(tmdbId, season, episode),
+                wrappedVidEasy(tmdbId, season, episode),
+                wrappedVidrock(tmdbId, season, episode),
+                wrappedRiveStream(tmdbId, season, episode),
+                wrapped2embed(imdbId, season, episode),
+                wrappedVidSrcXyz(imdbId, season, episode),
+                wrappedSkyMoviesHD(tmdbId, season, episode),
+                wrappedVidFast(tmdbId, season, episode),
+                wrappedVidCore(tmdbId, season, episode),
+                wrappedVidSync(tmdbId, season, episode)
+            ];
+
+            var settled = await Promise.allSettled(providerCalls);
+            var results = [];
             var seen = {};
-            providerResults.forEach(function(r) {
-                if (Array.isArray(r)) r.forEach(function(s) {
-                    if (s && s.url && !seen[s.url]) {
-                        seen[s.url] = true;
-                        s.drop_403 = true;
-                        results.push(s);
+            settled.forEach(function(s) {
+                var r = s.status === "fulfilled" ? s.value : [];
+                if (Array.isArray(r)) r.forEach(function(stream) {
+                    if (stream && stream.url && !seen[stream.url]) {
+                        seen[stream.url] = true;
+                        stream.drop_403 = true;
+                        results.push(stream);
                     }
                 });
             });
