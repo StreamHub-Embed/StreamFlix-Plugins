@@ -9,6 +9,7 @@ jobs:
   sync:
     permissions:
       contents: write
+      actions: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -67,3 +68,8 @@ jobs:
           git add -A
           git diff --staged --quiet || git commit -m "chore: sync plugins from sources [skip ci]"
           git push
+
+      - name: Trigger bundle workflow
+        run: gh workflow run bundle.yml
+        env:
+          GH_TOKEN: ${{ github.token }}
