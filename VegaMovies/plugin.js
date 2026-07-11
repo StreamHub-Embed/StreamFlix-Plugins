@@ -494,19 +494,20 @@
                 { n: 'Korean Series', u: wu + '/category/korean-series/page/%d/' }
             ];
             var result = {};
-            for (var ci = 0; ci < cats.length; ci++) {
-                var html = await fetchUrl(cats[ci].u.replace('%d', '1'));
-                if (!html) continue;
+            var catResults = await Promise.all(cats.map(async function(c) {
+                var html = await fetchUrl(c.u.replace('%d', '1'));
+                if (!html) return null;
                 var re = /<a\s+href="([^"]+)"[^>]*>\s*<div class="poster-card">[\s\S]*?<img[^>]+src="([^"]+)"[^>]+alt="([^"]*)"[\s\S]*?<\/a>/gi;
-                var pm, items = [];
+                var items = [], pm;
                 while ((pm = re.exec(html)) !== null) {
                     var title = cleanTitle(pm[3]);
                     if (!title || title.indexOf('${') >= 0) continue;
                     if (isBadUrl(pm[1])) continue;
                     items.push({ title: title, url: fixUrl(pm[1]), posterUrl: pm[2].indexOf('://') >= 0 ? pm[2] : fixUrl(pm[2]), type: 'movie', description: '' });
                 }
-                if (items.length > 0) result[cats[ci].n] = items;
-            }
+                return items.length > 0 ? { name: c.n, items: items } : null;
+            }));
+            catResults.forEach(function(r) { if (r) result[r.name] = r.items; });
             if (Object.keys(result).length === 0) result['Latest Movies'] = [];
             cb({ success: true, data: result });
         } catch (e) { cb({ success: true, data: { 'Latest Movies': [] } }); }
