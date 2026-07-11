@@ -1,0 +1,23 @@
+{
+	"packageName": "dev.cookie.stremio",
+	"name": "stremio http",
+	"version": 3,
+	"baseUrl": "https://stremio-hub.local",
+	"description": "Aggregates streaming links from Stremio HTTP addons.Dynamic quality extraction, URL validation, MAGIC_PROXY for reliable playback.",
+	"authors": ["Cookie🍪"],
+	"languages": ["EN", "HI", "TE", "TA"],
+	"categories": ["Movies", "TV", "Anime"],
+	"streamTitleTemplate": "{if stream.resolution}{stream.resolution} {/if}{if stream.codec}{stream.codec} {/if}{if stream.audio}🔊 {stream.audio} {/if}{if stream.size}💾 {stream.size} {/if}{if stream.peers}👤{stream.peers} {/if}{if stream.seeders}🌱{stream.seeders} {/if}[{stream.addonName}]",
+	"catalogueAddons": [
+		"https://catalog.ers.pw/bmZ4LGRucCxhbXAsYXRwLGhibSxwY3AsaGx1LHBtcCxjcnUsamhzLHNvbnlsaXYsemVlOjpJTjoxNzgzMDU4OTYxMTY3OjA6MDo%3D/manifest.json"
+	],
+	"metaAddons": ["https://v3-cinemeta.strem.io/manifest.json"],
+	"streamingAddons": [
+		"https://87d6a6ef6b58-webstreamrmbg.baby-beamup.club/%7B%22multi%22%3A%22on%22%7D/manifest.json",
+		"https://bc48e59c61df-cinescrape-docker.baby-beamup.club/eyJzb3VyY2VfbW92aWVib3giOiJvbiIsInNvdXJjZV9hY2VybW92aWVzIjoib24iLCJzb3VyY2VfNGtoZGh1YiI6Im9uIiwic291cmNlX2FuaXdhdmVzIjoib24iLCJzb3VyY2VfbW92aWVzZHJpdmVzIjoib24iLCJzb3VyY2VfYWxsbW92aWVsYW5kIjoib24iLCJzb3VyY2Vfb3ZlcmZsaXgiOiJvbiIsInNvdXJjZV92YXBsYXllciI6Im9uIiwic291cmNlX3ZpZGtpbmciOiJvbiIsInNvdXJjZV9hbmltZXN1Z2UiOiJvbiIsInNvdXJjZV9hZXRoZXIiOiJvbiIsInJlc18yMTYwIjoib24iLCJyZXNfMTA4MCI6Im9uIiwicmVzXzcyMCI6Im9uIiwicmVzXzQ4MCI6Im9uIiwicmVzXzM2MCI6Im9uIiwiYXVkaW9fZW5nbGlzaCI6Im9uIiwiYXVkaW9fdGFtaWwiOiJvbiIsImF1ZGlvX3RlbHVndSI6Im9uIiwiYXVkaW9faGluZGkiOiJvbiIsImF1ZGlvX21hbGF5YWxhbSI6Im9uIiwiYXVkaW9fYmVuZ2FsaSI6Im9uIiwibGF5b3V0IjoiY2luZW1hdGljIn0/manifest.json?v=74638",
+		"https://pengu.uk/%7B%22source_4khdhub%22%3A%22on%22%2C%22source_cinefreak%22%3A%22on%22%2C%22source_aniwaves%22%3A%22on%22%2C%22source_moviebox%22%3A%22on%22%2C%22source_moviesdrives%22%3A%22on%22%2C%22source_allmovieland%22%3A%22on%22%2C%22source_overflix%22%3A%22on%22%2C%22source_vaplayer%22%3A%22on%22%2C%22source_vidking%22%3A%22on%22%2C%22source_animesuge%22%3A%22on%22%2C%22source_aether%22%3A%22on%22%2C%22source_vidlink%22%3A%22on%22%2C%22source_hdghartv%22%3A%22on%22%2C%22source_scloud%22%3A%22on%22%2C%22res_2160%22%3A%22on%22%2C%22res_1080%22%3A%22on%22%2C%22res_720%22%3A%22on%22%2C%22res_480%22%3A%22on%22%2C%22res_360%22%3A%22on%22%2C%22auth_token%22%3A%22ul-TV2NDYJoL6rDZA9sBG64HPZs9kit-kH9rCSzJrW4%22%7D/manifest.json",
+		"https://hdhub.thevolecitor.qzz.io/eyJ0b3Jib3giOiJ1bnNldCIsInF1YWxpdGllcyI6IjIxNjBwLDEwODBwLDcyMHAsNDgwcCIsInNvcnQiOiJkZXNjIn0/manifest.json",
+		"https://aiostreamsfortheweebs.midnightignite.me/stremio/8062780c-5265-40db-85bd-beadc99e3602/eyJpIjoiNTRHOHp6ZzA4c3ViVlhDQW8zNW41dz09IiwiZSI6IkVnaTYwaWNlVGZQVzBiZUFXc2tTdjZXdTEzS3ZLM2F4aXJoYk5GQk9vYzA9IiwidCI6ImEifQ/manifest.json",
+		"https://6172e63fd702-del-kdrama-series-movies.baby-beamup.club/manifest.json"
+	]
+}
