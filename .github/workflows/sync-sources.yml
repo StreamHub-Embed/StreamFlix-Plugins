@@ -1,0 +1,69 @@
+name: Sync Sources
+
+on:
+  schedule:
+    - cron: "0 */6 * * *"
+  workflow_dispatch:
+
+jobs:
+  sync:
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sync plugins from sources.json
+        run: |
+          updated=0
+          skipped=0
+
+          while read -r entry; do
+            name=$(echo "$entry" | jq -r '.name')
+            jsURL=$(echo "$entry" | jq -r '.jsURL')
+            jsonURL=$(echo "$entry" | jq -r '.jsonURL')
+
+            mkdir -p "$name"
+
+            jsTmp=$(mktemp)
+            jsonTmp=$(mktemp)
+            curl -sL "$jsURL" -o "$jsTmp"
+            curl -sL "$jsonURL" -o "$jsonTmp"
+
+            jsChanged=1
+            jsonChanged=1
+
+            if [ -f "$name/plugin.js" ]; then
+              newHash=$(sha256sum "$jsTmp" | cut -d' ' -f1)
+              oldHash=$(sha256sum "$name/plugin.js" | cut -d' ' -f1)
+              [ "$newHash" = "$oldHash" ] && jsChanged=0
+            fi
+
+            if [ -f "$name/plugin.json" ]; then
+              newHash=$(sha256sum "$jsonTmp" | cut -d' ' -f1)
+              oldHash=$(sha256sum "$name/plugin.json" | cut -d' ' -f1)
+              [ "$newHash" = "$oldHash" ] && jsonChanged=0
+            fi
+
+            if [ "$jsChanged" = "1" ] || [ "$jsonChanged" = "1" ]; then
+              [ "$jsChanged" = "1" ] && cp "$jsTmp" "$name/plugin.js"
+              [ "$jsonChanged" = "1" ] && cp "$jsonTmp" "$name/plugin.json"
+              echo "UPDATED $name"
+              updated=$((updated + 1))
+            else
+              echo "SKIP  $name (unchanged)"
+              skipped=$((skipped + 1))
+            fi
+
+            rm -f "$jsTmp" "$jsonTmp"
+          done < <(jq -c '.plugins[]' sources.json)
+
+          echo "Done. $updated updated, $skipped skipped."
+
+      - name: Commit changes
+        run: |
+          git config --local user.name "github-actions[bot]"
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --staged --quiet || git commit -m "chore: sync plugins from sources [skip ci]"
+          git push

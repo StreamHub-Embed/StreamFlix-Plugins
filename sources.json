@@ -1,0 +1,39 @@
+{
+  "plugins": [
+    {
+      "name": "CNCverse",
+      "jsURL": "https://raw.githubusercontent.com/NivinCNC/CNCVerse-Sky-Stream-Extension/main/cncverse/plugin.js",
+      "jsonURL": "https://raw.githubusercontent.com/NivinCNC/CNCVerse-Sky-Stream-Extension/main/cncverse/plugin.json"
+    },
+    {
+      "name": "Stremio",
+      "jsURL": "https://raw.githubusercontent.com/thegnsme/skystream-plugins/main/Stremio/plugin.js",
+      "jsonURL": "https://raw.githubusercontent.com/thegnsme/skystream-plugins/main/Stremio/plugin.json"
+    },
+    {
+      "name": "fourkhdhub",
+      "jsURL": "https://raw.githubusercontent.com/akashdh11/skystream-plugins/main/fourkhdhub/plugin.js",
+      "jsonURL": "https://raw.githubusercontent.com/akashdh11/skystream-plugins/main/fourkhdhub/plugin.json"
+    },
+    {
+      "name": "hdhub4u",
+      "jsURL": "https://raw.githubusercontent.com/akashdh11/skystream-plugins/main/hdhub4u/plugin.js",
+      "jsonURL": "https://raw.githubusercontent.com/akashdh11/skystream-plugins/main/hdhub4u/plugin.json"
+    },
+    {
+      "name": "moviesdrive",
+      "jsURL": "https://raw.githubusercontent.com/akashdh11/skystream-plugins/main/moviesdrive/plugin.js",
+      "jsonURL": "https://raw.githubusercontent.com/akashdh11/skystream-plugins/main/moviesdrive/plugin.json"
+    },
+    {
+      "name": "movies4u",
+      "jsURL": "https://raw.githubusercontent.com/likhithkrishna1103-tech/Hindmovie/main/movies4u/plugin.js",
+      "jsonURL": "https://raw.githubusercontent.com/likhithkrishna1103-tech/Hindmovie/main/movies4u/plugin.json"
+    },
+    {
+      "name": "moviebox",
+      "jsURL": "https://raw.githubusercontent.com/NivinCNC/CNCVerse-Sky-Stream-Extension/main/moviebox/plugin.js",
+      "jsonURL": "https://raw.githubusercontent.com/NivinCNC/CNCVerse-Sky-Stream-Extension/main/moviebox/plugin.json"
+    }
+  ]
+}
