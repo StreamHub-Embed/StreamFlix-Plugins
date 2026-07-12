@@ -931,6 +931,18 @@
                         }
                     }
                 }
+            } else if (lowerUrl.indexOf("multicloudlinks") !== -1) {
+                var html = await fetchUrl(url, HTML_HEADERS);
+                if (html) {
+                    var turboM = html.match(/href=['"](https:\/\/dr\d+\.multidownload\.shop\/d\/[^"']+)['"]/i);
+                    if (turboM) {
+                        var turboUrl = turboM[1].replace(/&amp;/g, '&');
+                        if (turboUrl.indexOf("action=download") === -1) {
+                            turboUrl += (turboUrl.indexOf("?") !== -1 ? "&" : "?") + "action=download";
+                        }
+                        streams.push({ url: turboUrl, label: "MultiCloud Turbo" });
+                    }
+                }
             } else if (lowerUrl.indexOf("streamtape") !== -1 || lowerUrl.indexOf("tpead.net") !== -1) {
                 var html = await fetchUrl(url, HTML_HEADERS);
                 if (html) {
@@ -1075,7 +1087,7 @@
                 for (var bi = 0; bi < anchors2.length; bi++) {
                     var hr = anchors2[bi].getAttribute("href") || "";
                     var txt = cleanText(anchors2[bi].textContent);
-                    if (!/howblogs\.xyz|tpead\.net|hubcloud|cinedrive|gdflix|hubdrive|filepress|gofile|voe|streamtape|pixeldrain/i.test(hr)) continue;
+                    if (!/howblogs\.xyz|tpead\.net|hubcloud|cinedrive|gdflix|hubdrive|filepress|gofile|voe|streamtape|pixeldrain|multicloudlinks/i.test(hr)) continue;
                     if (seenHr[hr]) continue;
                     seenHr[hr] = true;
 
