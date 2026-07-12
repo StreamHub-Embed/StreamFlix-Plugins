@@ -751,6 +751,31 @@
     }
 
     // ───── SkyMoviesHD Stream Provider ─────
+    async function resolveBusyCdn(url) {
+        try {
+            for (var hi = 0; hi < 5; hi++) {
+                var redirectRes = await http_get(url, { redirect: "manual", headers: { "User-Agent": UA } });
+                if (!redirectRes) break;
+                if (redirectRes.status >= 301 && redirectRes.status <= 308) {
+                    var loc = redirectRes.headers["location"] || redirectRes.headers["Location"];
+                    if (!loc) break;
+                    if (loc.indexOf("fastcdn-dl.pages.dev") !== -1) {
+                        var urlParam = loc.match(/[?&]url=([^&]+)/);
+                        if (urlParam) return decodeURIComponent(urlParam[1]);
+                    }
+                    url = loc.indexOf("http") === 0 ? loc : getBaseUrl(url) + (loc.indexOf("/") === 0 ? "" : "/") + loc;
+                } else {
+                    if (url.indexOf("fastcdn-dl.pages.dev") !== -1) {
+                        var urlParam = url.match(/[?&]url=([^&]+)/);
+                        if (urlParam) return decodeURIComponent(urlParam[1]);
+                    }
+                    break;
+                }
+            }
+        } catch (_) {}
+        return null;
+    }
+
     async function resolveDirectStream(url) {
         var streams = [];
         var HTML_HEADERS = { "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" };
@@ -844,8 +869,11 @@
             } else if (lowerUrl.indexOf("gdflix.dev/file/") !== -1) {
                 var html = await fetchUrl(url, HTML_HEADERS);
                 if (html) {
-                    var instM = html.match(/href="([^"]*instant\.busycdn\.xyz[^"]*)"/i);
-                    if (instM) streams.push({ url: instM[1], label: "GDFlix Instant 10Gbps" });
+                    var busyM = html.match(/href="([^"]*instant\.busycdn\.xyz[^"]*)"/i);
+                    if (busyM) {
+                        var busyUrl = await resolveBusyCdn(busyM[1]);
+                        if (busyUrl) streams.push({ url: busyUrl, label: "GDFlix Instant Direct" });
+                    }
                     var fastM = html.match(/href="([^"]*gdflix\.dev\/zfile\/[^"]*)"/i);
                     if (fastM) streams.push({ url: fastM[1], label: "GDFlix Fast Cloud" });
                 }
@@ -932,16 +960,98 @@
                     }
                 }
             } else if (lowerUrl.indexOf("multicloudlinks") !== -1) {
-                var html = await fetchUrl(url, HTML_HEADERS);
-                if (html) {
-                    var turboM = html.match(/href=['"](https:\/\/dr\d+\.multidownload\.shop\/d\/[^"']+)['"]/i);
-                    if (turboM) {
-                        var turboUrl = turboM[1].replace(/&amp;/g, '&');
-                        if (turboUrl.indexOf("action=download") === -1) {
-                            turboUrl += (turboUrl.indexOf("?") !== -1 ? "&" : "?") + "action=download";
-                        }
-                        streams.push({ url: turboUrl, label: "MultiCloud Turbo" });
+                // Manual redirect chain to ensure we get the final HTML page
+                var mcUrl = url;
+                for (var mci = 0; mci < 5; mci++) {
+                    var mcRes = await http_get(mcUrl, { redirect: "manual", headers: { "User-Agent": UA, "Accept": "text/html,*/*" } });
+                    if (!mcRes) break;
+                    if (mcRes.status >= 301 && mcRes.status <= 308) {
+                        var newLoc = mcRes.headers["location"] || mcRes.headers["Location"];
+                        if (!newLoc) break;
+                        mcUrl = newLoc.indexOf("http") === 0 ? newLoc : getBaseUrl(mcUrl) + (newLoc.indexOf("/") === 0 ? "" : "/") + newLoc;
+                        continue;
                     }
+                    // Got final page — extract download links
+                    var body = mcRes.body || "";
+                    if (body) {
+                        // 1) Turbo download (dr*.multidownload.shop)
+                        var turboM = body.match(/href=['"]([^'"]*multidownload\.shop\/d\/[^'"]+)['"]/i);
+                        if (turboM) {
+                            var tu = turboM[1].replace(/&amp;/g, '&');
+                            if (tu.indexOf("action=download") === -1) {
+                                tu += (tu.indexOf("?") !== -1 ? "&" : "?") + "action=download";
+                            }
+                            streams.push({ url: tu, label: "MultiCloud Turbo" });
+                            break;
+                        }
+                        // 2) Direct download (cgd*.multicloudlinks.com)
+                        var cgdM = body.match(/href=['"](https?:\/\/cgd\d+\.multicloudlinks\.com\/[^'"]+)['"]/i);
+                        if (cgdM) {
+                            streams.push({ url: cgdM[1], label: "MultiCloud Direct" });
+                            break;
+                        }
+                        // 3) Any multidownload.shop link
+                        var anyM = body.match(/href=['"]([^'"]*multidownload\.shop\/[^'"]+)['"]/i);
+                        if (anyM) {
+                            streams.push({ url: anyM[1].replace(/&amp;/g, '&'), label: "MultiCloud Download" });
+                            break;
+                        }
+                    }
+                    break;
+                }
+            } else if (lowerUrl.indexOf("uploadflix") !== -1) {
+                var ufUrl = url;
+                for (var ufi = 0; ufi < 5; ufi++) {
+                    var ufRes = await http_get(ufUrl, { redirect: "manual", headers: { "User-Agent": UA, "Accept": "text/html,*/*" } });
+                    if (!ufRes) break;
+                    if (ufRes.status >= 301 && ufRes.status <= 308) {
+                        var newLoc = ufRes.headers["location"] || ufRes.headers["Location"];
+                        if (!newLoc) break;
+                        ufUrl = newLoc.indexOf("http") === 0 ? newLoc : getBaseUrl(ufUrl) + (newLoc.indexOf("/") === 0 ? "" : "/") + newLoc;
+                        continue;
+                    }
+                    var ufBody = ufRes.body || "";
+                    if (ufBody) {
+                        // 1) secure-storage.top direct link
+                        var ssM = ufBody.match(/href=['"](https?:\/\/[^'"]*secure-storage\.top[^'"]+)['"]/i);
+                        if (ssM) { streams.push({ url: ssM[1], label: "UploadFlix Direct" }); break; }
+                        // 2) kingfiles.club direct link
+                        var kfM = ufBody.match(/href=['"](https?:\/\/[^'"]*kingfiles\.club[^'"]+)['"]/i);
+                        if (kfM) { streams.push({ url: kfM[1], label: "UploadFlix Direct" }); break; }
+                        // 3) anchor wrapping "Create Download Link" button
+                        var cdM = ufBody.match(/href=['"]([^'"]+)['"][^>]*>[\s\S]{0,500}Create Download Link/i);
+                        if (cdM) { streams.push({ url: cdM[1], label: "UploadFlix Direct" }); break; }
+                    }
+                    break;
+                }
+            } else if (lowerUrl.indexOf("uploadhub") !== -1) {
+                var uhUrl = url;
+                for (var uhi = 0; uhi < 5; uhi++) {
+                    var uhRes = await http_get(uhUrl, { redirect: "manual", headers: { "User-Agent": UA, "Accept": "text/html,*/*" } });
+                    if (!uhRes) break;
+                    if (uhRes.status >= 301 && uhRes.status <= 308) {
+                        var newLoc = uhRes.headers["location"] || uhRes.headers["Location"];
+                        if (!newLoc) break;
+                        uhUrl = newLoc.indexOf("http") === 0 ? newLoc : getBaseUrl(uhUrl) + (newLoc.indexOf("/") === 0 ? "" : "/") + newLoc;
+                        continue;
+                    }
+                    var uhBody = uhRes.body || "";
+                    if (uhBody) {
+                        var idM = uhBody.match(/name="id"\s+value="([^"]+)"/i);
+                        if (idM) {
+                            var postRes = await http_post(uhUrl, {
+                                headers: { "Content-Type": "application/x-www-form-urlencoded", "Origin": getBaseUrl(uhUrl), "Referer": uhUrl },
+                                body: "op=download2&id=" + encodeURIComponent(idM[1]) + "&rand=&referer=&method_free=1&method_premium=&adblock_detected=0"
+                            });
+                            if (postRes && postRes.body) {
+                                var dlM = postRes.body.match(/id="direct_link"[^>]*>[\s\S]*?href=['"]([^'"]+)['"]/i);
+                                if (dlM) {
+                                    streams.push({ url: dlM[1], label: "UploadHub Direct" });
+                                }
+                            }
+                        }
+                    }
+                    break;
                 }
             } else if (lowerUrl.indexOf("streamtape") !== -1 || lowerUrl.indexOf("tpead.net") !== -1) {
                 var html = await fetchUrl(url, HTML_HEADERS);
@@ -1087,7 +1197,7 @@
                 for (var bi = 0; bi < anchors2.length; bi++) {
                     var hr = anchors2[bi].getAttribute("href") || "";
                     var txt = cleanText(anchors2[bi].textContent);
-                    if (!/howblogs\.xyz|tpead\.net|hubcloud|cinedrive|gdflix|hubdrive|filepress|gofile|voe|streamtape|pixeldrain|multicloudlinks/i.test(hr)) continue;
+                    if (!/howblogs\.xyz|tpead\.net|hubcloud|cinedrive|gdflix|hubdrive|filepress|gofile|voe|streamtape|pixeldrain|multicloudlinks|uploadflix|uploadhub|busycdn/i.test(hr)) continue;
                     if (seenHr[hr]) continue;
                     seenHr[hr] = true;
 
