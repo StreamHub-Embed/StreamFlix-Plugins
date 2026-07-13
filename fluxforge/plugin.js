@@ -1505,7 +1505,9 @@
             });
 
             results.sort(function(a, b) {
-                return (b.quality || 0) - (a.quality || 0) || (a.source || "").localeCompare(b.source || "");
+                if ((b.quality || 0) !== (a.quality || 0)) return (b.quality || 0) - (a.quality || 0);
+                var aR = (a.source || "").toLowerCase().indexOf("rivestream") !== -1, bR = (b.source || "").toLowerCase().indexOf("rivestream") !== -1;
+                return aR !== bR ? (aR ? 1 : -1) : (a.source || "").localeCompare(b.source || ""); // RiveStream sources last
             });
             cb({ success: true, data: results });
         } catch (e) {
