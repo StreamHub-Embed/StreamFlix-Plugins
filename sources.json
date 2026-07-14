@@ -6,11 +6,6 @@
       "jsonURL": "https://raw.githubusercontent.com/NivinCNC/CNCVerse-Sky-Stream-Extension/main/cncverse/plugin.json"
     },
     {
-      "name": "Stremio",
-      "jsURL": "https://raw.githubusercontent.com/thegnsme/skystream-plugins/main/Stremio/plugin.js",
-      "jsonURL": "https://raw.githubusercontent.com/thegnsme/skystream-plugins/main/Stremio/plugin.json"
-    },
-    {
       "name": "fourkhdhub",
       "jsURL": "https://raw.githubusercontent.com/akashdh11/skystream-plugins/main/fourkhdhub/plugin.js",
       "jsonURL": "https://raw.githubusercontent.com/akashdh11/skystream-plugins/main/fourkhdhub/plugin.json"
