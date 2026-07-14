@@ -28,22 +28,27 @@ jobs:
 
             jsTmp=$(mktemp)
             jsonTmp=$(mktemp)
-            curl -sL "$jsURL" -o "$jsTmp"
-            curl -sL "$jsonURL" -o "$jsonTmp"
 
-            jsChanged=1
-            jsonChanged=1
+            jsFail=0; jsonFail=0
+            curl -sL --fail "$jsURL" -o "$jsTmp" 2>/dev/null || jsFail=1
+            curl -sL --fail "$jsonURL" -o "$jsonTmp" 2>/dev/null || jsonFail=1
 
-            if [ -f "$name/plugin.js" ]; then
+            jsChanged=0; jsonChanged=0
+
+            if [ "$jsFail" = "0" ] && [ -f "$name/plugin.js" ]; then
               newHash=$(sha256sum "$jsTmp" | cut -d' ' -f1)
               oldHash=$(sha256sum "$name/plugin.js" | cut -d' ' -f1)
-              [ "$newHash" = "$oldHash" ] && jsChanged=0
+              [ "$newHash" != "$oldHash" ] && jsChanged=1
+            elif [ "$jsFail" = "0" ] && [ ! -f "$name/plugin.js" ]; then
+              jsChanged=1
             fi
 
-            if [ -f "$name/plugin.json" ]; then
+            if [ "$jsonFail" = "0" ] && [ -f "$name/plugin.json" ]; then
               newHash=$(sha256sum "$jsonTmp" | cut -d' ' -f1)
               oldHash=$(sha256sum "$name/plugin.json" | cut -d' ' -f1)
-              [ "$newHash" = "$oldHash" ] && jsonChanged=0
+              [ "$newHash" != "$oldHash" ] && jsonChanged=1
+            elif [ "$jsonFail" = "0" ] && [ ! -f "$name/plugin.json" ]; then
+              jsonChanged=1
             fi
 
             if [ "$jsChanged" = "1" ] || [ "$jsonChanged" = "1" ]; then
@@ -51,6 +56,9 @@ jobs:
               [ "$jsonChanged" = "1" ] && cp "$jsonTmp" "$name/plugin.json"
               echo "UPDATED $name"
               updated=$((updated + 1))
+            elif [ "$jsFail" = "1" ] || [ "$jsonFail" = "1" ]; then
+              echo "SKIP  $name (remote 404; local kept)"
+              skipped=$((skipped + 1))
             else
               echo "SKIP  $name (unchanged)"
               skipped=$((skipped + 1))
