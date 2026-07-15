@@ -14,7 +14,7 @@
 	"metaAddons": ["https://v3-cinemeta.strem.io/manifest.json"],
 	"streamingAddons": [
 		"https://87d6a6ef6b58-webstreamrmbg-dev.baby-beamup.club/manifest.json",
-		"https://pengu.uk/%7B%22source_111477%22%3A%22on%22%2C%22source_cinefreak%22%3A%22on%22%2C%22source_moviebox%22%3A%22on%22%2C%22source_mkvbase%22%3A%22on%22%2C%22source_moviesdrives%22%3A%22on%22%2C%22source_vaplayer%22%3A%22on%22%2C%22source_vidking%22%3A%22on%22%2C%22source_vidlink%22%3A%22on%22%2C%22source_hdghartv%22%3A%22on%22%2C%22res_1080%22%3A%22on%22%2C%22res_720%22%3A%22on%22%2C%22res_480%22%3A%22on%22%2C%22res_360%22%3A%22on%22%2C%22disable_direct%22%3A%22on%22%7D/manifest.json",
+		"https://pengu.uk/%7B%22source_111477%22%3A%22on%22%2C%22source_4khdhub%22%3A%22on%22%2C%22source_cinefreak%22%3A%22on%22%2C%22source_moviebox%22%3A%22on%22%2C%22source_mkvbase%22%3A%22on%22%2C%22source_moviesdrives%22%3A%22on%22%2C%22source_vaplayer%22%3A%22on%22%2C%22source_videasy%22%3A%22on%22%2C%22source_aether%22%3A%22on%22%2C%22source_vidlink%22%3A%22on%22%2C%22source_vidfast%22%3A%22on%22%2C%22source_hdghartv%22%3A%22on%22%2C%22res_2160%22%3A%22on%22%2C%22res_1080%22%3A%22on%22%2C%22res_720%22%3A%22on%22%7D/manifest.json",
 		"https://hdhub.thevolecitor.qzz.io/eyJ0b3Jib3giOiJ1bnNldCIsInF1YWxpdGllcyI6IjIxNjBwLDEwODBwLDcyMHAsNDgwcCIsInNvcnQiOiJkZXNjIn0/manifest.json",
 		"https://aiostreamsfortheweebs.midnightignite.me/stremio/8062780c-5265-40db-85bd-beadc99e3602/eyJpIjoiNTRHOHp6ZzA4c3ViVlhDQW8zNW41dz09IiwiZSI6IkVnaTYwaWNlVGZQVzBiZUFXc2tTdjZXdTEzS3ZLM2F4aXJoYk5GQk9vYzA9IiwidCI6ImEifQ/manifest.json"
 	]
