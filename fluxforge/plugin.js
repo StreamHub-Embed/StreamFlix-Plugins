@@ -14,6 +14,8 @@
     var H_VIDFAST  = { "Referer": "https://vidfast.pro/", "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36", "X-Requested-With": "XMLHttpRequest", "Accept": "*/*" };
     var H_RIVESTREAM = { "User-Agent": UA };
     var H_VIDSYNC   = { "Origin": "https://vidsync.xyz", "Referer": "https://vidsync.xyz/", "User-Agent": UA, "X-Requested-With": "XMLHttpRequest", "Accept": "*/*" };
+    var H_MOVIELINKBD = { "User-Agent": UA, "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", "Accept-Language": "en-US,en;q=0.5", "Cookie": "xla=s4t", "Referer": "https://movielinkbd.shop/" };
+    var MOVIELINKBD_BASE = "https://movielinkbd.shop";
 
     // ───── SkyMoviesHD Config ─────
     var SKY_API = "https://skymovieshd.ceo";
@@ -1412,6 +1414,181 @@
         } catch (_) { return []; }
     }
 
+    // ───── Provider: MovieLinkBD ─────
+    function mlbdCleanText(v) { return String(v || "").replace(/\s+/g, " ").trim(); }
+
+    function mlbdDecode(v) {
+        return String(v || "").replace(/&#(\d+);/g, function(_, c) { return String.fromCharCode(Number(c)); }).replace(/&#x([0-9a-f]+);/gi, function(_, c) { return String.fromCharCode(parseInt(c, 16)); }).replace(/&amp;/gi, "&").replace(/&nbsp;/gi, " ").replace(/&quot;/gi, "\"").replace(/&#39;/gi, "'").replace(/&lt;/gi, "<").replace(/&gt;/gi, ">");
+    }
+
+    function mlbdFixUrl(u) {
+        if (!u) return ""; u = mlbdDecode(String(u).trim());
+        if (u.indexOf("://") > 0) return u;
+        if (u.indexOf("//") === 0) return "https:" + u;
+        return MOVIELINKBD_BASE + (u.indexOf("/") === 0 ? "" : "/") + u;
+    }
+
+    function mlbdExtractGetLinks(html) {
+        var links = [];
+        var seen = {};
+        var re = /<a[^>]+href="(\/getLink\/[^"]+)"[^>]*>([\s\S]*?)<\/a>/gi;
+        var m;
+        while ((m = re.exec(html))) {
+            if (seen[m[1]]) continue; seen[m[1]] = true;
+            var text = mlbdCleanText(m[2].replace(/<[^>]+>/g, " "));
+            var quality = "Auto", size = "";
+            var qm = text.match(/(\d{3,4})\s*p/i);
+            if (qm) quality = qm[1] + "p";
+            var sm = text.match(/([\d.]+)\s*(MB|GB|KB)/i);
+            if (sm) size = sm[1] + " " + sm[2];
+            links.push({ url: mlbdFixUrl(m[1]), quality: quality, size: size });
+        }
+        if (links.length === 0) {
+            re = /href="(\/getLink\/[^"]+)"/gi;
+            while ((m = re.exec(html))) {
+                if (seen[m[1]]) continue; seen[m[1]] = true;
+                var ctx = html.substring(Math.max(0, m.index - 200), m.index + 300);
+                var qm = ctx.match(/(\d{3,4})\s*p/i);
+                links.push({ url: mlbdFixUrl(m[1]), quality: qm ? qm[1] + "p" : "Auto", size: "" });
+            }
+        }
+        return links;
+    }
+
+    function mlbdGetFileUrl(html) {
+        var m = /href="(\/file\/[^"]+)"/i.exec(html);
+        return m ? mlbdFixUrl(m[1]) : null;
+    }
+
+    function mlbdGetTokenUrl(html) {
+        var m = /href="(\/file\/[^"]+\?token=[^"]+)"/i.exec(html);
+        if (m) return mlbdFixUrl(m[1]);
+        m = /href="(\/file\/[^"]+\?[a-z]+=[^"]+)"/i.exec(html);
+        return m ? mlbdFixUrl(m[1]) : null;
+    }
+
+    function mlbdClassifyUrl(url) {
+        if (!url) return null;
+        var u = url.toLowerCase();
+        if (u.indexOf("instantcloud") >= 0) return "InstantCloud";
+        if (u.indexOf(".r2.dev") >= 0 || u.indexOf("cloudflare") >= 0 || u.indexOf("fastcloud") >= 0) return "FastCloud";
+        if (u.indexOf("movielinkbd.mom") >= 0 || u.indexOf("movielinkbd.") >= 0) return "Mirror-" + u.match(/\/\/([^.]+)\./)?.[1] || "Mirror";
+        if (u.indexOf("/open/") >= 0) return "Direct";
+        if (u.indexOf("/download/") >= 0) return "CloudDownloader";
+        if (u.indexOf("play.") >= 0 && u.match(/\/watch\//)) return "Stream";
+        return null;
+    }
+
+    function mlbdExtractFinal(html) {
+        var results = [];
+        var seen = {};
+        var re = /<a[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi;
+        var m;
+        while ((m = re.exec(html))) {
+            var url = mlbdFixUrl(m[1]);
+            if (!url || seen[url]) continue; seen[url] = true;
+            if (url.indexOf(MOVIELINKBD_BASE) === 0 && url.indexOf("/getLink/") < 0 && url.indexOf("/file/") < 0 && url.indexOf("/getWatch/") < 0) {
+                var name = mlbdClassifyUrl(url);
+                if (name) results.push({ url: url, name: name });
+            }
+            if (url.indexOf("http") === 0 && url.indexOf(MOVIELINKBD_BASE) !== 0 && url.indexOf("cloudflare.com") < 0) {
+                var name = mlbdClassifyUrl(url);
+                if (name) results.push({ url: url, name: name });
+            }
+        }
+        var sm = /const\s+SRC\s*=\s*"([^"]+)"/.exec(html);
+        if (sm) {
+            var su = mlbdDecode(sm[1].replace(/\\\//g, "/"));
+            if (!seen[su]) { seen[su] = true; results.push({ url: su, name: "Stream" }); }
+        }
+        return results;
+    }
+
+    async function mlbdResolve(getLinkUrl, quality) {
+        var fallback = null;
+        try {
+            var res = await http_get(getLinkUrl, { headers: H_MOVIELINKBD });
+            if (res && res.body) {
+                var fileUrl = mlbdGetFileUrl(res.body);
+                if (fileUrl) {
+                    fallback = [{ url: fileUrl, name: "FileRedirect", quality: quality }];
+                    var res2 = await http_get(fileUrl, { headers: H_MOVIELINKBD });
+                    if (res2 && res2.body) {
+                        var tokenUrl = mlbdGetTokenUrl(res2.body);
+                        if (tokenUrl) {
+                            fallback = [{ url: tokenUrl, name: "TokenRedirect", quality: quality }];
+                            var res3 = await http_get(tokenUrl, { headers: H_MOVIELINKBD });
+                            if (res3 && res3.body) {
+                                var links = mlbdExtractFinal(res3.body);
+                                if (links && links.length > 0) {
+                                    links.forEach(function(l) { l.quality = quality; });
+                                    return links;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (_) {}
+        return fallback;
+    }
+
+    async function fetchMovieLinkBD(tmdbId, season, episode) {
+        try {
+            var details = await fetchJson(TMDB_API + "/" + (season == null ? "movie" : "tv") + "/" + tmdbId);
+            if (!details) return [];
+            var title = details.title || details.name || "";
+            var year = (details.release_date || details.first_air_date || "").split("-")[0];
+            if (!title) return [];
+
+            var searchRes = await http_get(MOVIELINKBD_BASE + "/search?q=" + encodeURIComponent((title + " " + year).trim()), { headers: H_MOVIELINKBD });
+            if (!searchRes || !searchRes.body) return [];
+
+            var movieUrl = null;
+            var seenUrls = {};
+            var searchRe = /<a[^>]+href="((?:https?:)?\/\/[^"']+\/(?:movie|series)\/[^"']+)"[^>]*>/gi;
+            var sm;
+            while ((sm = searchRe.exec(searchRes.body))) {
+                var u = sm[1].indexOf("http") === 0 ? sm[1] : (MOVIELINKBD_BASE + sm[1]);
+                if (seenUrls[u]) continue; seenUrls[u] = true;
+                var ctx = searchRes.body.substring(Math.max(0, sm.index - 200), sm.index + 100);
+                var tt = ctx.match(/(?:alt|title)="([^"]+)"/i);
+                var t = tt ? mlbdCleanText(tt[1]) : "";
+                if (!t) { var tt2 = ctx.replace(/<[^>]+>/g, " ").match(title.substring(0, 15).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")); if (tt2) t = tt2[0]; }
+                var tl = t.toLowerCase(), titleL = title.toLowerCase();
+                if (tl && (tl.indexOf(titleL.substring(0, Math.min(12, titleL.length))) >= 0 || titleL.indexOf(tl.substring(0, Math.min(12, tl.length))) >= 0)) {
+                    movieUrl = u; break;
+                }
+            }
+            if (!movieUrl) {
+                for (var u2 in seenUrls) { movieUrl = u2; break; }
+            }
+            if (!movieUrl) return [];
+
+            var movieRes = await http_get(movieUrl, { headers: H_MOVIELINKBD });
+            if (!movieRes || !movieRes.body) return [];
+
+            var getLinks = mlbdExtractGetLinks(movieRes.body);
+            if (getLinks.length === 0) return [];
+
+            var results = [];
+            var resolveCalls = getLinks.map(function(gl) {
+                return mlbdResolve(gl.url, gl.quality).then(function(finalLinks) {
+                    var qVal = parseInt(gl.quality, 10) || 0;
+                    if (finalLinks && finalLinks.length > 0) {
+                        finalLinks.forEach(function(fl) {
+                            results.push(new StreamResult({ source: "MovieLinkBD [" + fl.name + " - " + gl.quality + "]", url: fl.url, quality: qVal, headers: H_MOVIELINKBD }));
+                        });
+                    } else {
+                        results.push(new StreamResult({ source: "MovieLinkBD [GetLink - " + gl.quality + "]", url: gl.url, quality: qVal, headers: H_MOVIELINKBD }));
+                    }
+                });
+            });
+            await Promise.all(resolveCalls);
+            return results;
+        } catch (_) { return []; }
+    }
+
     // ─ Provider timeout + circuit breaker ─────
     var FLUX_TIMEOUT_MS = 12000;
     var FLUX_MAX_FAILURES = 2;
@@ -1475,6 +1652,7 @@
             var wrappedVidFast = fluxStream(fetchVidFast, "VidFast", failMap);
             var wrappedVidCore = fluxStream(fetchVidCore, "VidCore", failMap);
             var wrappedVidSync = fluxStream(fetchVidSync, "VidSync", failMap);
+            var wrappedMovieLinkBD = fluxStream(fetchMovieLinkBD, "MovieLinkBD", failMap);
 
             var providerCalls = [
                 wrappedVaplayer(tmdbId, season, episode),
@@ -1487,7 +1665,8 @@
                 wrappedSkyMoviesHD(tmdbId, season, episode),
                 wrappedVidFast(tmdbId, season, episode),
                 wrappedVidCore(tmdbId, season, episode),
-                wrappedVidSync(tmdbId, season, episode)
+                wrappedVidSync(tmdbId, season, episode),
+                wrappedMovieLinkBD(tmdbId, season, episode)
             ];
 
             var settled = await Promise.allSettled(providerCalls);
