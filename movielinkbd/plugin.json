@@ -1,0 +1,19 @@
+{
+  "packageName": "dev.streamflix.movielinkbd",
+  "name": "MovieLinkBD",
+  "version": 1,
+  "baseUrl": "https://movielinkbd.shop",
+  "description": "Bengali, Hindi, English, Dual Audio Movies & Web Series",
+  "authors": [
+    "open-code"
+  ],
+  "languages": [
+    "bn",
+    "hi",
+    "en"
+  ],
+  "categories": [
+    "Movie",
+    "TvSeries"
+  ]
+}
