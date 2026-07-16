@@ -5,6 +5,7 @@
     var TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p";
     var UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
     var HEADERS = { "User-Agent": UA, "Accept": "application/json" };
+    var _tmdbCache = {};
 
     // ───── Provider header presets (from Kotlin extractors) ─────
     var H_VAPLAYER = { "Referer": "https://nextgencloudfabric.com/", "User-Agent": UA };
@@ -257,7 +258,7 @@
     // ───── Provider: VidEasy (api.wingsdatabase.com) ─────
     async function fetchVidEasy(tmdbId, season, episode) {
         try {
-            var details = await fetchJson(TMDB_API + "/" + (season == null ? "movie" : "tv") + "/" + tmdbId + "?append_to_response=external_ids");
+            var details = _tmdbCache[tmdbId] || await fetchJson(TMDB_API + "/" + (season == null ? "movie" : "tv") + "/" + tmdbId + "?append_to_response=external_ids");
             if (!details) return [];
             var title = details.title || details.name || "";
             var year = (details.release_date || details.first_air_date || "").split("-")[0];
@@ -1103,7 +1104,7 @@
     async function fetchSkyMoviesHD(tmdbId, season, episode) {
         try {
             // Get TMDB details for title/year
-            var details = await fetchJson(TMDB_API + "/" + (season == null ? "movie" : "tv") + "/" + tmdbId + "?append_to_response=external_ids");
+            var details = _tmdbCache[tmdbId] || await fetchJson(TMDB_API + "/" + (season == null ? "movie" : "tv") + "/" + tmdbId + "?append_to_response=external_ids");
             if (!details) return [];
             var searchTitle = details.title || details.name || "";
             var searchYear = (details.release_date || details.first_air_date || "").split("-")[0];
@@ -1368,7 +1369,7 @@
     async function fetchVidSync(tmdbId, season, episode) {
         try {
             var api = "https://enc-dec.app/api";
-            var details = await fetchJson(TMDB_API + "/" + (season == null ? "movie" : "tv") + "/" + tmdbId + "?append_to_response=external_ids");
+            var details = _tmdbCache[tmdbId] || await fetchJson(TMDB_API + "/" + (season == null ? "movie" : "tv") + "/" + tmdbId + "?append_to_response=external_ids");
             if (!details) return [];
             var title = details.title || details.name || "";
             var year = (details.release_date || details.first_air_date || "").split("-")[0];
@@ -1535,7 +1536,7 @@
 
     async function fetchMovieLinkBD(tmdbId, season, episode) {
         try {
-            var details = await fetchJson(TMDB_API + "/" + (season == null ? "movie" : "tv") + "/" + tmdbId);
+            var details = _tmdbCache[tmdbId] || await fetchJson(TMDB_API + "/" + (season == null ? "movie" : "tv") + "/" + tmdbId + "?append_to_response=external_ids");
             if (!details) return [];
             var title = details.title || details.name || "";
             var year = (details.release_date || details.first_air_date || "").split("-")[0];
@@ -1638,6 +1639,7 @@
 
             var imdbId = "";
             var details = await fetchJson(TMDB_API + "/" + (season == null ? "movie" : "tv") + "/" + tmdbId + "?append_to_response=external_ids");
+            if (details) _tmdbCache[tmdbId] = details;
             if (details && details.external_ids && details.external_ids.imdb_id) imdbId = details.external_ids.imdb_id;
 
             var failMap = {};
