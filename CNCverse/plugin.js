@@ -236,8 +236,11 @@
     let isRefreshing = false;
     let backgroundBypassPromise = null;
 
-    // Immediately kick off parallel background bypass on plugin load to start resolving premium verify2 token (one-line comment)
+    // Only kick off background bypass on startup if cached token is stale or not premium (one-line comment)
     setTimeout(function() {
+        if (cachedCookie && isNewToken && (Date.now() - lastBypassTime <= 21600000)) {
+            return;
+        }
         try { runBackgroundBypass(cfg()); } catch (_) {}
     }, 0);
 
