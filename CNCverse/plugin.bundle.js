@@ -533,24 +533,44 @@ var __BUNDLED_MANIFEST__="eyJwYWNrYWdlTmFtZSI6ImRldi5uaXZpbmNuYy5jbmN2ZXJzZS5jbm
             const res = await http_get(postUrl, Object.assign({}, providerHeaders(provider), { Referer: referer, Cookie: cookieStr }));
             const data = parseJsonSafe(res.body, {});
 
+            const targetSeasonId = globalThis._targetSeasonId;
             const episodes = [];
-            if (Array.isArray(data.episodes) && data.episodes.length > 0 && data.episodes[0]) {
-                data.episodes.forEach(function (ep) {
-                    episodes.push(new Episode({
-                        name: clean(ep.t) || 'Episode',
-                        season: parseInt(String(ep.s || '').replace('S', ''), 10) || 1,
-                        episode: parseInt(String(ep.ep || '').replace('E', ''), 10) || 1,
-                        url: JSON.stringify({ provider: provider.id, kind: 'play', id: clean(ep.id), title: clean(ep.t) || clean(data.title) || 'Title' }),
-                        posterUrl: proxiedImage(provider.episodePoster(clean(ep.id)))
-                    }));
+
+            const seasonsList = [];
+            // Force Season 1 as default and sort seasonsList ascending on initial load (one-line comment)
+            if (Array.isArray(data.season)) {
+                data.season.forEach(function (s, idx) {
+                    if (s && s.id) {
+                        seasonsList.push({
+                            name: clean(s.name) || ('Season ' + (idx + 1)),
+                            number: parseInt(clean(s.name).replace(/[^0-9]/g, '')) || (idx + 1),
+                            id: clean(s.id)
+                        });
+                    }
                 });
-                if (Number(data.nextPageShow || 0) === 1 && data.nextPageSeason) {
-                    await fetchPagedEpisodes(provider, payload.id, data.nextPageSeason, 2, episodes, cookieStr);
-                }
-                if (Array.isArray(data.season) && data.season.length > 1) {
-                    for (let i = 0; i < data.season.length - 1; i++) {
-                        if (data.season[i] && data.season[i].id) {
-                            await fetchPagedEpisodes(provider, payload.id, data.season[i].id, 1, episodes, cookieStr);
+                seasonsList.sort(function (a, b) { return a.number - b.number; });
+            }
+
+            if (Array.isArray(data.episodes) && data.episodes.length > 0 && data.episodes[0]) {
+                if (targetSeasonId) {
+                    await fetchPagedEpisodes(provider, payload.id, targetSeasonId, 1, episodes, cookieStr);
+                } else {
+                    const defaultSeasonNum = parseInt(String(data.episodes[0].s || '').replace('S', ''), 10) || 1;
+                    const season1 = seasonsList.find(function (s) { return s.number === 1; });
+                    if (defaultSeasonNum !== 1 && season1) {
+                        await fetchPagedEpisodes(provider, payload.id, season1.id, 1, episodes, cookieStr);
+                    } else {
+                        data.episodes.forEach(function (ep) {
+                            episodes.push(new Episode({
+                                name: clean(ep.t) || 'Episode',
+                                season: defaultSeasonNum,
+                                episode: parseInt(String(ep.ep || '').replace('E', ''), 10) || 1,
+                                url: JSON.stringify({ provider: provider.id, kind: 'play', id: clean(ep.id), title: clean(ep.t) || clean(data.title) || 'Title' }),
+                                posterUrl: proxiedImage(provider.episodePoster(clean(ep.id)))
+                            }));
+                        });
+                        if (Number(data.nextPageShow || 0) === 1 && data.nextPageSeason) {
+                            await fetchPagedEpisodes(provider, payload.id, data.nextPageSeason, 2, episodes, cookieStr);
                         }
                     }
                 }
@@ -572,8 +592,9 @@ var __BUNDLED_MANIFEST__="eyJwYWNrYWdlTmFtZSI6ImRldi5uaXZpbmNuYy5jbmN2ZXJzZS5jbm
                     posterUrl: proxiedImage(provider.poster(payload.id)),
                     backgroundPosterUrl: proxiedImage(provider.background(payload.id)),
                     description: clean(data.desc),
-                    type: episodes.length > 1 ? 'tvseries' : 'movie',
+                    type: (episodes.length > 1 || seasonsList.length > 0) ? 'tvseries' : 'movie',
                     year: parseInt(data.year, 10) || undefined,
+                    seasons: seasonsList.length > 0 ? seasonsList : undefined,
                     episodes: episodes
                 })
             });
