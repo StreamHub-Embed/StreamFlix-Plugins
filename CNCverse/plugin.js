@@ -216,40 +216,45 @@
         const now = Date.now();
         if (cachedCookie && (now - lastBypassTime) < 54000000) return cachedCookie;
         try {
-            const desktopHeaders = {
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-                'Accept-Encoding': 'gzip, deflate, br, zstd',
-                'Accept-Language': 'en-US,en;q=0.9',
-                'Cache-Control': 'max-age=0',
-                'Connection': 'keep-alive',
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'Origin': 'https://net22.cc',
-                'Referer': 'https://net22.cc/verify2',
-                'sec-ch-ua': '"Google Chrome";v="147", "Not.A/Brand";v="8", "Chromium";v="147"',
-                'sec-ch-ua-mobile': '?0',
-                'sec-ch-ua-platform': '"Windows"',
-                'Sec-Fetch-Dest': 'document',
-                'Sec-Fetch-Mode': 'navigate',
-                'Sec-Fetch-Site': 'same-origin',
-                'Sec-Fetch-User': '?1',
-                'Upgrade-Insecure-Requests': '1',
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36'
+            const mobileHeaders = {
+                'User-Agent': BYPASS_UA,
+                'X-Requested-With': 'app.netmirror.netmirrornew'
             };
-            const uuid = (typeof crypto !== 'undefined' && crypto && typeof crypto.randomUUID === 'function')
-                ? crypto.randomUUID()
-                : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-                    const r = Math.random() * 16 | 0;
-                    const v = c === 'x' ? r : (r & 0x3 | 0x8);
-                    return v.toString(16);
-                });
-            const body = 'g-recaptcha-response=' + encodeURIComponent(uuid);
-            const res = await http_post('https://net52.cc/verify.php', desktopHeaders, body);
-            const rawHeader = (res.headers && (res.headers['set-cookie'] || res.headers['Set-Cookie'])) || '';
-            const hash = parseSetCookie(rawHeader);
-            if (!hash) throw new Error('Failed to extract t_hash_t from verify response');
-            cachedCookie = hash;
-            lastBypassTime = Date.now();
-            return cachedCookie;
+            const challengeUrl = BASE_URL + '/mobile/home?app=1';
+            const challengeRes = await http_get(challengeUrl, mobileHeaders);
+            const html = String(challengeRes.body || '');
+            const am = html.match(/<body[^>]*data-addhash="([^"]+)"/i);
+            const addhash = am ? am[1] : '';
+            if (!addhash) throw new Error('Failed to extract addhash from challenge page');
+            await http_get('https://userver.net52.cc/?jjoii=' + encodeURIComponent(addhash) + '&a=y&t=' + unixTs());
+            const verifyHeaders = {
+                'User-Agent': BYPASS_UA,
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'redirect': 'follow'
+            };
+            const verifyBody = 'verify=' + encodeURIComponent(addhash);
+            let lastError = null;
+            for (let attempt = 0; attempt < 7; attempt++) {
+                if (attempt > 0) await new Promise(function (r) { return setTimeout(r, 10000); });
+                try {
+                    const verifyRes = await http_post(BASE_URL + '/mobile/verify2.php', verifyHeaders, verifyBody);
+                    const rawHeader = (verifyRes.headers && (verifyRes.headers['set-cookie'] || verifyRes.headers['Set-Cookie'])) || '';
+                    const hash = parseSetCookie(rawHeader);
+                    if (hash) {
+                        cachedCookie = hash;
+                        lastBypassTime = Date.now();
+                        return cachedCookie;
+                    }
+                    const verifyText = String(verifyRes.body || '');
+                    if (verifyText.indexOf('"statusup":"All Done"') !== -1) {
+                        throw new Error('verify2 returned All Done but no t_hash_t cookie');
+                    }
+                } catch (e) {
+                    lastError = e;
+                }
+            }
+            throw lastError || new Error('Failed to verify cookie');
         } catch (e) {
             cachedCookie = '';
             lastBypassTime = 0;
