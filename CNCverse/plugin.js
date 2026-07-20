@@ -210,18 +210,21 @@
         });
     }
 
+    const BYPASS_UA = 'Mozilla/5.0 (Linux; Android 12; RMX2117 Build/SP1A.210812.016; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/147.0.7727.55 Mobile Safari/537.36 /OS.Gatu v3.0';
+
     async function bypass(provider) {
-        if (cachedCookie && Date.now() - lastBypassTime < 54 * 60 * 60 * 1000) return cachedCookie;
+        const now = Date.now();
+        if (cachedCookie && (now - lastBypassTime) < 54000000) return cachedCookie;
         try {
-            const headers = {
+            const desktopHeaders = {
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
                 'Accept-Encoding': 'gzip, deflate, br, zstd',
                 'Accept-Language': 'en-US,en;q=0.9',
                 'Cache-Control': 'max-age=0',
                 'Connection': 'keep-alive',
                 'Content-Type': 'application/x-www-form-urlencoded',
-                'Origin': BASE_URL,
-                'Referer': BASE_URL + '/verify2',
+                'Origin': 'https://net22.cc',
+                'Referer': 'https://net22.cc/verify2',
                 'sec-ch-ua': '"Google Chrome";v="147", "Not.A/Brand";v="8", "Chromium";v="147"',
                 'sec-ch-ua-mobile': '?0',
                 'sec-ch-ua-platform': '"Windows"',
@@ -232,10 +235,18 @@
                 'Upgrade-Insecure-Requests': '1',
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36'
             };
-            const body = 'g-recaptcha-response=' + encodeURIComponent(randomUuid());
-            const res = await http_post(BASE_URL + '/verify.php', Object.assign({ redirect: 'manual' }, headers), body);
-            const hash = parseSetCookie((res && res.headers && (res.headers['set-cookie'] || res.headers['Set-Cookie'])) || '');
-            if (!hash) throw new Error('Failed to bypass authentication');
+            const uuid = (typeof crypto !== 'undefined' && crypto && typeof crypto.randomUUID === 'function')
+                ? crypto.randomUUID()
+                : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+                    const r = Math.random() * 16 | 0;
+                    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                    return v.toString(16);
+                });
+            const body = 'g-recaptcha-response=' + encodeURIComponent(uuid);
+            const res = await http_post('https://net52.cc/verify.php', desktopHeaders, body);
+            const rawHeader = (res.headers && (res.headers['set-cookie'] || res.headers['Set-Cookie'])) || '';
+            const hash = parseSetCookie(rawHeader);
+            if (!hash) throw new Error('Failed to extract t_hash_t from verify response');
             cachedCookie = hash;
             lastBypassTime = Date.now();
             return cachedCookie;
