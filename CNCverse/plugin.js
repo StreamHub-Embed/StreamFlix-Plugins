@@ -71,10 +71,10 @@
             baseUrl: BASE_URL,
             playUrl: PLAY_URL,
             homePath: '/mobile/home?app=1',
-            searchPath: '/search.php',
-            postPath: '/post.php',
-            episodesPath: '/episodes.php',
-            playlistPath: '/playlist.php',
+            searchPath: '/mobile/search.php',
+            postPath: '/mobile/post.php',
+            episodesPath: '/mobile/episodes.php',
+            playlistPath: '/mobile/playlist.php',
             usePlayHandshake: true,
             includeUserToken: true,
             poster: function (id) { return 'https://imgcdn.kim/poster/v/' + id + '.jpg'; },
@@ -86,11 +86,11 @@
             ott: 'pv',
             baseUrl: PLAY_URL,
             playUrl: PLAY_URL,
-            homePath: '/pv/homepage.php',
-            searchPath: '/pv/search.php',
-            postPath: '/pv/post.php',
-            episodesPath: '/pv/episodes.php',
-            playlistPath: '/pv/playlist.php',
+            homePath: '/mobile/home?app=1',
+            searchPath: '/mobile/pv/search.php',
+            postPath: '/mobile/pv/post.php',
+            episodesPath: '/mobile/pv/episodes.php',
+            playlistPath: '/mobile/pv/playlist.php',
             usePlayHandshake: true,
             includeUserToken: true,
             poster: function (id) { return 'https://imgcdn.kim/pv/v/' + id + '.jpg'; },
@@ -116,6 +116,7 @@
         'DISNEY PLUS': {
             id: 'DISNEY PLUS',
             ott: 'dp',
+            studio: 'disney',
             baseUrl: PLAY_URL,
             playUrl: PLAY_URL,
             homePath: '/mobile/home?app=1',
@@ -212,6 +213,18 @@
 
     const BYPASS_UA = 'Mozilla/5.0 (Linux; Android 12; RMX2117 Build/SP1A.210812.016; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/147.0.7727.55 Mobile Safari/537.36 /OS.Gatu v3.0';
 
+    function collectCookies(headers) {
+        var raw = headers && (headers['set-cookie'] || headers['Set-Cookie']);
+        if (!raw) return '';
+        var list = Array.isArray(raw) ? raw : [raw];
+        var parts = [];
+        for (var i = 0; i < list.length; i++) {
+            var first = list[i].split(';')[0].trim();
+            if (first.indexOf('=') !== -1) parts.push(first);
+        }
+        return parts.join('; ');
+    }
+
     async function bypass(provider) {
         const now = Date.now();
         if (cachedCookie && (now - lastBypassTime) < 54000000) return cachedCookie;
@@ -222,21 +235,28 @@
             };
             const challengeUrl = BASE_URL + '/mobile/home?app=1';
             const challengeRes = await http_get(challengeUrl, mobileHeaders);
+            var cookieJar = collectCookies(challengeRes.headers);
             const html = String(challengeRes.body || '');
             const am = html.match(/<body[^>]*data-addhash="([^"]+)"/i);
             const addhash = am ? am[1] : '';
             if (!addhash) throw new Error('Failed to extract addhash from challenge page');
-            await http_get('https://userver.net52.cc/?jjoii=' + encodeURIComponent(addhash) + '&a=y&t=' + unixTs());
+            var userverHeaders = {};
+            if (cookieJar) userverHeaders['Cookie'] = cookieJar;
+            var userverRes = await http_get('https://userver.net52.cc/?jjoii=' + encodeURIComponent(addhash) + '&a=y&t=' + Date.now(), userverHeaders);
+            var extraCookies = collectCookies(userverRes.headers);
+            if (extraCookies) cookieJar = cookieJar ? cookieJar + '; ' + extraCookies : extraCookies;
             const verifyHeaders = {
                 'User-Agent': BYPASS_UA,
                 'X-Requested-With': 'XMLHttpRequest',
                 'Content-Type': 'application/x-www-form-urlencoded',
                 'redirect': 'follow'
             };
+            if (cookieJar) verifyHeaders['Cookie'] = cookieJar;
+            // Use addhash as verify param and run retry loop to wait for backend ad approval (one-line comment)
             const verifyBody = 'verify=' + encodeURIComponent(addhash);
             let lastError = null;
-            for (let attempt = 0; attempt < 7; attempt++) {
-                if (attempt > 0) await new Promise(function (r) { return setTimeout(r, 10000); });
+            for (let attempt = 0; attempt < 25; attempt++) {
+                if (attempt > 0) await new Promise(function (r) { return setTimeout(r, 2000); });
                 try {
                     const verifyRes = await http_post(BASE_URL + '/mobile/verify2.php', verifyHeaders, verifyBody);
                     const rawHeader = (verifyRes.headers && (verifyRes.headers['set-cookie'] || verifyRes.headers['Set-Cookie'])) || '';
@@ -265,6 +285,7 @@
     async function cookieString(provider) {
         const hash = await bypass(provider);
         const parts = ['t_hash_t=' + hash, 'ott=' + provider.ott, 'hd=on'];
+        if (provider.studio) parts.push('studio=' + provider.studio);
         if (provider.includeUserToken) parts.push('user_token=233123f803cf02184bf6c67e149cdd50');
         return parts.join('; ');
     }
@@ -510,7 +531,8 @@
     async function loadMobilePlaylistStreams(provider, payload, playlistPath, ottOverride) {
         const hash = await bypass(provider);
         const ott = ottOverride || provider.ott;
-        const cookieStr = 't_hash_t=' + hash + '; ott=' + ott + '; hd=on';
+        let cookieStr = 't_hash_t=' + hash + '; ott=' + ott + '; hd=on';
+        if (provider.studio) cookieStr += '; studio=' + provider.studio;
         const baseUrl = provider.playUrl;
         const playlistUrl = baseUrl + playlistPath + '?id=' + encodeURIComponent(payload.id) + '&t=' + encodeURIComponent(payload.title || '') + '&tm=' + unixTs();
         const res = await http_get(playlistUrl, Object.assign({}, providerHeaders(provider), {
@@ -577,18 +599,24 @@
 
             let results = [];
             try {
-                results = await loadUnifiedTvStream(provider, payload);
-            } catch (_) {
-                results = [];
-            }
-
-            if (!results.length) {
+                // Try CS3 direct HLS playlist extraction first (one-line comment)
                 if (provider.id === 'HOTSTAR' || provider.id === 'DISNEY PLUS') {
                     results = await loadMobilePlaylistStreams(provider, payload, '/mobile/hs/playlist.php', 'hs');
                 } else if (provider.id === 'NETFLIX') {
                     results = await loadMobilePlaylistStreams(provider, payload, '/mobile/playlist.php');
                 } else {
                     results = await loadPrimeStreams(provider, payload);
+                }
+            } catch (_) {
+                results = [];
+            }
+
+            // Failsafe: Try unified TV player stream if direct playlists failed
+            if (!results.length) {
+                try {
+                    results = await loadUnifiedTvStream(provider, payload);
+                } catch (_) {
+                    results = [];
                 }
             }
             cb({ success: true, data: results });

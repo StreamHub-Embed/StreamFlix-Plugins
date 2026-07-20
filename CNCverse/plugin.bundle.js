@@ -1,1 +1,633 @@
-var __BUNDLED_MANIFEST__="eyJwYWNrYWdlTmFtZSI6ImRldi5uaXZpbmNuYy5jbmN2ZXJzZS5jbmN2ZXJzZSIsIm5hbWUiOiJDTkNWZXJzZSIsInZlcnNpb24iOjksImJhc2VVcmwiOiJodHRwczovL25ldDUyLmNjIiwiZGVzY3JpcHRpb24iOiJOZXRmbGl4LCBQcmltZVZpZGVvLCBEaXNuZXkrIEhvdHN0YXIgQ29udGVudHMgaW4gTXVsdGlwbGUgTGFuZ3VhZ2VzIiwiYXV0aG9ycyI6WyJOaXZpbkNOQyJdLCJsYW5ndWFnZXMiOlsiZW4iLCJ0YSIsImhpIl0sImNhdGVnb3JpZXMiOlsiTW92aWUiLCJUdlNlcmllcyIsIkFuaW1lIl0sInByb3ZpZGVycyI6W3siaWQiOiJORVRGTElYIiwibmFtZSI6Ik5ldGZsaXgifSx7ImlkIjoiUFJJTUUgVklERU8iLCJuYW1lIjoiUHJpbWUgVmlkZW8ifSx7ImlkIjoiSE9UU1RBUiIsIm5hbWUiOiJIb3RzdGFyIn0seyJpZCI6IkRJU05FWSBQTFVTIiwibmFtZSI6IkRpc25leSBQbHVzIn1dfQ==";!function(){const e="https://net52.cc",t="https://net52.cc",i={"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"},s={Accept:"text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7","Accept-Language":"en-IN,en-US;q=0.9,en;q=0.8","Cache-Control":"max-age=0",Connection:"keep-alive","sec-ch-ua":'"Not(A:Brand";v="8", "Chromium";v="144", "Android WebView";v="144"',"sec-ch-ua-mobile":"?0","sec-ch-ua-platform":'"Android"',"Sec-Fetch-Dest":"document","Sec-Fetch-Mode":"navigate","Sec-Fetch-Site":"same-origin","Sec-Fetch-User":"?1","Upgrade-Insecure-Requests":"1","User-Agent":"Mozilla/5.0 (Linux; Android 13; Pixel 5 Build/TQ3A.230901.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/144.0.7559.132 Safari/537.36 /OS.Gatu v3.0","X-Requested-With":"XMLHttpRequest"},n={"Cache-Control":"no-cache, no-store, must-revalidate",Pragma:"no-cache",Expires:"0","X-Requested-With":"NetmirrorNewTV v1.0","User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:136.0) Gecko/20100101 Firefox/136.0 /OS.GatuNewTV v1.0",Accept:"application/json, text/plain, */*"},o=["aHR0cHM6Ly9tb2JpbGVkZXRlY3RzLmNvbQ==","aHR0cHM6Ly9tb2JpbGVkZXRlY3QuYXBw","aHR0cHM6Ly9tb2JpZGV0ZWN0LmFydA==","aHR0cHM6Ly9tb2JpZGV0ZWN0LmNj","aHR0cHM6Ly9tb2JpZGV0ZWN0LmNsaWNr","aHR0cHM6Ly9tb2JpZGV0ZWN0Lmluaw==","aHR0cHM6Ly9tb2JpZGV0ZWN0LmxpdmU=","aHR0cHM6Ly9tb2JpZGV0ZWN0LnBybw==","aHR0cHM6Ly9tb2JpZGV0ZWN0LnNob3A=","aHR0cHM6Ly9tb2JpZGV0ZWN0LnNpdGU=","aHR0cHM6Ly9tb2JpZGV0ZWN0LnNwYWNl","aHR0cHM6Ly9tb2JpZGV0ZWN0LnN0b3Jl","aHR0cHM6Ly9tb2JpZGV0ZWN0LnZpcA==","aHR0cHM6Ly9tb2JpZGV0ZWN0Lndpa2k=","aHR0cHM6Ly9tb2JpZGV0ZWN0Lnh5eg==","aHR0cHM6Ly9tb2JpZGV0ZWN0cy5hcnQ=","aHR0cHM6Ly9tb2JpZGV0ZWN0cy5jYw==","aHR0cHM6Ly9tb2JpZGV0ZWN0cy5pbmZv","aHR0cHM6Ly9tb2JpZGV0ZWN0cy5pbms=","aHR0cHM6Ly9tb2JpZGV0ZWN0cy5saXZl","aHR0cHM6Ly9tb2JpZGV0ZWN0cy5wcm8=","aHR0cHM6Ly9tb2JpZGV0ZWN0cy5zdG9yZQ==","aHR0cHM6Ly9tb2JpZGV0ZWN0cy50b3A=","aHR0cHM6Ly9tb2JpZGV0ZWN0cy54eXo="],r={NETFLIX:{id:"NETFLIX",ott:"nf",baseUrl:e,playUrl:t,homePath:"/mobile/home?app=1",searchPath:"/search.php",postPath:"/post.php",episodesPath:"/episodes.php",playlistPath:"/playlist.php",usePlayHandshake:!0,includeUserToken:!0,poster:function(e){return"https://imgcdn.kim/poster/v/"+e+".jpg"},background:function(e){return"https://imgcdn.kim/poster/h/"+e+".jpg"},episodePoster:function(e){return"https://imgcdn.kim/epimg/150/"+e+".jpg"}},"PRIME VIDEO":{id:"PRIME VIDEO",ott:"pv",baseUrl:t,playUrl:t,homePath:"/pv/homepage.php",searchPath:"/pv/search.php",postPath:"/pv/post.php",episodesPath:"/pv/episodes.php",playlistPath:"/pv/playlist.php",usePlayHandshake:!0,includeUserToken:!0,poster:function(e){return"https://imgcdn.kim/pv/v/"+e+".jpg"},background:function(e){return"https://imgcdn.kim/pv/h/"+e+".jpg"},episodePoster:function(e){return"https://imgcdn.kim/pvepimg/150/"+e+".jpg"}},HOTSTAR:{id:"HOTSTAR",ott:"hs",baseUrl:t,playUrl:t,homePath:"/mobile/home?app=1",searchPath:"/mobile/hs/search.php",postPath:"/mobile/hs/post.php",episodesPath:"/mobile/hs/episodes.php",playlistPath:"/mobile/hs/playlist.php",usePlayHandshake:!0,includeUserToken:!0,poster:function(e){return"https://imgcdn.kim/hs/v/"+e+".jpg"},background:function(e){return"https://imgcdn.kim/hs/h/"+e+".jpg"},episodePoster:function(e){return"https://imgcdn.kim/hsepimg/150/"+e+".jpg"}},"DISNEY PLUS":{id:"DISNEY PLUS",ott:"dp",baseUrl:t,playUrl:t,homePath:"/mobile/home?app=1",searchPath:"/mobile/hs/search.php",postPath:"/mobile/hs/post.php",episodesPath:"/mobile/hs/episodes.php",playlistPath:"/mobile/hs/playlist.php",usePlayHandshake:!0,includeUserToken:!0,poster:function(e){return"https://imgcdn.kim/hs/v/"+e+".jpg"},background:function(e){return"https://imgcdn.kim/hs/h/"+e+".jpg"},episodePoster:function(e){return"https://imgcdn.kim/hsepimg/150/"+e+".jpg"}}};let a="",p=0,c="";function l(e){return String(e||"").trim()}function d(e,t){try{return JSON.parse(e)}catch(e){return t}}function h(){return Math.floor(Date.now()/1e3)}function u(){const e=l(manifest&&manifest.providerId||"").toUpperCase();return r[e]||r.NETFLIX}function m(e){const t=l(e&&e.id).toUpperCase();return"HOTSTAR"===t||"DISNEY PLUS"===t||"NETFLIX"===t?s:i}function y(e){return e?"https://wsrv.nl/?url="+encodeURIComponent(e)+"&w=500":""}function g(e){return"function"==typeof atob?atob(e):"undefined"!=typeof Buffer?Buffer.from(e,"base64").toString("utf-8"):""}async function f(t){if(a&&Date.now()-p<1944e5)return a;try{const t={Accept:"text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7","Accept-Encoding":"gzip, deflate, br, zstd","Accept-Language":"en-US,en;q=0.9","Cache-Control":"max-age=0",Connection:"keep-alive","Content-Type":"application/x-www-form-urlencoded",Origin:e,Referer:e+"/verify2","sec-ch-ua":'"Google Chrome";v="147", "Not.A/Brand";v="8", "Chromium";v="147"',"sec-ch-ua-mobile":"?0","sec-ch-ua-platform":'"Windows"',"Sec-Fetch-Dest":"document","Sec-Fetch-Mode":"navigate","Sec-Fetch-Site":"same-origin","Sec-Fetch-User":"?1","Upgrade-Insecure-Requests":"1","User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36"},i="g-recaptcha-response="+encodeURIComponent("undefined"!=typeof crypto&&crypto&&"function"==typeof crypto.randomUUID?crypto.randomUUID():"xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g,function(e){const t=16*Math.random()|0;return("x"===e?t:3&t|8).toString(16)})),s=await http_post(e+"/verify.php",Object.assign({redirect:"manual"},t),i),n=function(e){let t=e;if(Array.isArray(t)&&(t=t.join("; ")),t=l(t),!t)return"";const i=t.match(/t_hash_t=([^;]+)/i);return i&&i[1]?decodeURIComponent(i[1]):""}(s&&s.headers&&(s.headers["set-cookie"]||s.headers["Set-Cookie"])||"");if(!n)throw new Error("Failed to bypass authentication");return a=n,p=Date.now(),a}catch(e){throw a="",p=0,e}}async function b(e){const t=["t_hash_t="+await f(),"ott="+e.ott,"hd=on"];return e.includeUserToken&&t.push("user_token=233123f803cf02184bf6c67e149cdd50"),t.join("; ")}async function R(e,t,i,s,n,o){let r=s;for(;;)try{const s=e.baseUrl+e.episodesPath+"?s="+encodeURIComponent(i)+"&series="+encodeURIComponent(t)+"&t="+h()+"&page="+r,a=d((await http_get(s,Object.assign({},m(e),{Cookie:o}))).body,{});if((Array.isArray(a.episodes)?a.episodes:[]).forEach(function(t){n.push(new Episode({name:l(t.t)||"Episode",season:parseInt(String(t.s||"").replace("S",""),10)||1,episode:parseInt(String(t.ep||"").replace("E",""),10)||1,url:JSON.stringify({provider:e.id,kind:"play",id:l(t.id),title:l(t.t)||"Episode"}),posterUrl:y(e.episodePoster(l(t.id)))}))}),0===Number(a.nextPageShow||0))break;r++}catch(e){break}}async function U(e,t,s,n){const o="t_hash_t="+await f()+"; ott="+(n||e.ott)+"; hd=on",r=e.playUrl,a=r+s+"?id="+encodeURIComponent(t.id)+"&t="+encodeURIComponent(t.title||"")+"&tm="+h(),p=d((await http_get(a,Object.assign({},m(e),{Referer:r+"/home",Cookie:o}))).body,[]),c=[];return(Array.isArray(p)?p:[]).forEach(function(t){(Array.isArray(t.sources)?t.sources:[]).forEach(function(t,s){const n=l(t.file);if(!n)return;const a=r+"/"+n.replace(/^\/+/,"");c.push(new StreamResult({url:a,source:l(t.label)||"Server "+(s+1),type:"hls",headers:{Referer:r+"/home",Cookie:o,"User-Agent":(m(e)||{})["User-Agent"]||i["User-Agent"]}}))})}),c}globalThis.getHome=async function(t){try{const i=u(),s=await b(i),n=Object.assign({},m(i),{Referer:i.baseUrl+"/mobile/home?app=1",Cookie:s,"X-Requested-With":"XMLHttpRequest"});if("PRIME VIDEO"===i.id){const s=Object.assign({},n,{Referer:e+"/home"}),o=d((await http_get(i.baseUrl+i.homePath,s)).body,{}),r={};return(Array.isArray(o.post)?o.post:[]).forEach(function(e){const t=l(e.cate)||"Trending",s=l(e.ids).split(",").map(l).filter(Boolean);s.length&&(r[t]=s.map(function(e){return new MultimediaItem({title:" ",url:JSON.stringify({provider:i.id,id:e}),posterUrl:i.poster(e),type:"movie"})}))}),t({success:!0,data:r})}const o=await http_get(i.baseUrl+i.homePath,n),r=function(e,t){const i={},s=/<(h2|span|div|p)[^>]*class="[^"]*(tray-title|mobile-tray-title|title|tray-title-container)[^"]*"[^>]*>([\s\S]*?)<\/\1>|data-post="([^"]+)"/gi;let n,o="Trending";for(;null!==(n=s.exec(e));)if(n[3]){const e=l(n[3].replace(/<[^>]*>/g,""));e&&e.length>2&&e.length<50&&-1===e.indexOf("{")&&(o=e)}else if(n[4]){const e=l(n[4]);if(!e||e.indexOf("'")>=0||e.indexOf("+")>=0)continue;i[o]||(i[o]=[]),i[o].some(function(t){const i=d(t.url,{});return i&&i.id===e})||i[o].push(new MultimediaItem({title:" ",url:JSON.stringify({provider:t.id,id:e}),posterUrl:y(t.poster(e)),type:"movie"}))}return i}(String(o.body||""),i);t({success:!0,data:r})}catch(e){t({success:!1,errorCode:"HOME_ERROR",message:String(e&&e.message||e)})}},globalThis.search=async function(t,i){try{const s=u(),n=await b(s),o=s.baseUrl+s.searchPath+"?s="+encodeURIComponent(t)+"&t="+h(),r="NETFLIX"===s.id?s.baseUrl+"/tv/home":e+"/home";i({success:!0,data:(d((await http_get(o,Object.assign({},m(s),{Referer:r,Cookie:n}))).body,{}).searchResult||[]).map(function(e){return new MultimediaItem({title:l(e.t)||"Title",url:JSON.stringify({provider:s.id,id:l(e.id)}),posterUrl:y(s.poster(l(e.id))),type:"movie"})})})}catch(e){i({success:!1,errorCode:"SEARCH_ERROR",message:String(e&&e.message||e)})}},globalThis.load=async function(t,i){try{const s=d(t,null);if(!s||!s.id)return i({success:!1,errorCode:"PARSE_ERROR",message:"Invalid payload"});const n=r[l(s.provider).toUpperCase()]||u(),o=await b(n),a=n.baseUrl+n.postPath+"?id="+encodeURIComponent(s.id)+"&t="+h(),p=e+"/tv/home",c=d((await http_get(a,Object.assign({},m(n),{Referer:p,Cookie:o}))).body,{}),g=[];if(Array.isArray(c.episodes)&&c.episodes.length>0&&c.episodes[0]){if(c.episodes.forEach(function(e){g.push(new Episode({name:l(e.t)||"Episode",season:parseInt(String(e.s||"").replace("S",""),10)||1,episode:parseInt(String(e.ep||"").replace("E",""),10)||1,url:JSON.stringify({provider:n.id,kind:"play",id:l(e.id),title:l(e.t)||l(c.title)||"Title"}),posterUrl:y(n.episodePoster(l(e.id)))}))}),1===Number(c.nextPageShow||0)&&c.nextPageSeason&&await R(n,s.id,c.nextPageSeason,2,g,o),Array.isArray(c.season)&&c.season.length>1)for(let e=0;e<c.season.length-1;e++)c.season[e]&&c.season[e].id&&await R(n,s.id,c.season[e].id,1,g,o)}else g.push(new Episode({name:l(c.title)||"Watch",season:1,episode:1,url:JSON.stringify({provider:n.id,kind:"play",id:s.id,title:l(c.title)||"Watch"}),posterUrl:y(n.poster(s.id))}));i({success:!0,data:new MultimediaItem({title:l(c.title)||"Title",url:JSON.stringify({provider:n.id,id:s.id}),posterUrl:y(n.poster(s.id)),backgroundPosterUrl:y(n.background(s.id)),description:l(c.desc),type:g.length>1?"tvseries":"movie",year:parseInt(c.year,10)||void 0,episodes:g})})}catch(e){i({success:!1,errorCode:"LOAD_ERROR",message:String(e&&e.message||e)})}},globalThis.loadStreams=async function(e,t){try{const s=d(e,null);if(!s||!s.id)return t({success:!1,errorCode:"PARSE_ERROR",message:"Invalid stream payload"});const a=r[l(s.provider).toUpperCase()]||u();let p=[];try{p=await async function(e,t){const i=await async function(){if(c)return c;for(let e=0;e<o.length;e++){const t=g(o[e]).replace(/\/+$/,"");if(t)try{const e=l(d((await http_get(t+"/checknewtv.php",n)).body,{}).token_hash);if(e&&(c=g(e).replace(/\/+$/,""),c))return c}catch(e){}}throw new Error("Failed to resolve NewTV API base URL")}(),s="HOTSTAR"===e.id||"DISNEY PLUS"===e.id?"hs":e.ott,r=function(e,t){const i=Object.assign({},n,{Ott:e});return t&&Object.keys(t).forEach(function(e){i[e]=t[e]}),i}(s,{Usertoken:""}),a=d((await http_get(i+"/newtv/player.php?id="+t.id,r)).body,{});if(!a.video_link)return[];const p={"User-Agent":n["User-Agent"],Ott:s},h=JSON.stringify({url:a.video_link,headers:p}),u="MAGIC_PROXY_v2"+btoa(h);return[new StreamResult({url:u,source:e.id+" [NetMirror]",type:"hls",headers:p})]}(a,s)}catch(e){p=[]}p.length||(p="HOTSTAR"===a.id||"DISNEY PLUS"===a.id?await U(a,s,"/mobile/hs/playlist.php","hs"):"NETFLIX"===a.id?await U(a,s,"/mobile/playlist.php"):await async function(e,t){const s=await b(e),n=e.baseUrl+e.playlistPath+"?id="+encodeURIComponent(t.id)+"&t="+encodeURIComponent(t.title||"")+"&tm="+h(),o=d((await http_get(n,Object.assign({},i,{Referer:e.baseUrl+"/home",Cookie:s,"X-Requested-With":"XMLHttpRequest"}))).body,[]),r=[];return(Array.isArray(o)?o:[]).forEach(function(t){(Array.isArray(t.sources)?t.sources:[]).forEach(function(t,n){let o=String(t.file||"").replace("/tv/","/");/^https?:\/\//i.test(o)||(o.startsWith("/")||(o="/"+o),o=e.playUrl+o),r.push(new StreamResult({url:o,source:"PrimeVideo ["+(l(t.label)||"S"+(n+1))+"]",type:"hls",headers:{Referer:e.playUrl+"/",Cookie:s,"User-Agent":i["User-Agent"]}}))})}),r}(a,s)),t({success:!0,data:p})}catch(e){t({success:!1,errorCode:"STREAM_ERROR",message:String(e&&e.message||e)})}}}();
+var __BUNDLED_MANIFEST__="eyJwYWNrYWdlTmFtZSI6ImRldi5uaXZpbmNuYy5jbmN2ZXJzZS5jbmN2ZXJzZSIsIm5hbWUiOiJDTkNWZXJzZSIsInZlcnNpb24iOjksImJhc2VVcmwiOiJodHRwczovL25ldDUyLmNjIiwiZGVzY3JpcHRpb24iOiJOZXRmbGl4LCBQcmltZVZpZGVvLCBEaXNuZXkrIEhvdHN0YXIgQ29udGVudHMgaW4gTXVsdGlwbGUgTGFuZ3VhZ2VzIiwiYXV0aG9ycyI6WyJOaXZpbkNOQyJdLCJsYW5ndWFnZXMiOlsiZW4iLCJ0YSIsImhpIl0sImNhdGVnb3JpZXMiOlsiTW92aWUiLCJUdlNlcmllcyIsIkFuaW1lIl0sInByb3ZpZGVycyI6W3siaWQiOiJORVRGTElYIiwibmFtZSI6Ik5ldGZsaXgifSx7ImlkIjoiUFJJTUUgVklERU8iLCJuYW1lIjoiUHJpbWUgVmlkZW8ifSx7ImlkIjoiSE9UU1RBUiIsIm5hbWUiOiJIb3RzdGFyIn0seyJpZCI6IkRJU05FWSBQTFVTIiwibmFtZSI6IkRpc25leSBQbHVzIn1dfQ==";;
+(function () {
+    /**
+     * @type {import('@skystream/sdk').Manifest}
+     */
+    // var manifest is injected at runtime
+
+    const BASE_URL = 'https://net52.cc';
+    const PLAY_URL = 'https://net52.cc';
+
+    const COMMON_HEADERS = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    };
+
+    const MOBILE_COMMON_HEADERS = {
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+        'Accept-Language': 'en-IN,en-US;q=0.9,en;q=0.8',
+        'Cache-Control': 'max-age=0',
+        'Connection': 'keep-alive',
+        'sec-ch-ua': '"Not(A:Brand";v="8", "Chromium";v="144", "Android WebView";v="144"',
+        'sec-ch-ua-mobile': '?0',
+        'sec-ch-ua-platform': '"Android"',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'same-origin',
+        'Sec-Fetch-User': '?1',
+        'Upgrade-Insecure-Requests': '1',
+        'User-Agent': 'Mozilla/5.0 (Linux; Android 13; Pixel 5 Build/TQ3A.230901.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/144.0.7559.132 Safari/537.36 /OS.Gatu v3.0',
+        'X-Requested-With': 'XMLHttpRequest'
+    };
+
+    const NEW_TV_BASE_HEADERS = {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+        'X-Requested-With': 'NetmirrorNewTV v1.0',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:136.0) Gecko/20100101 Firefox/136.0 /OS.GatuNewTV v1.0',
+        'Accept': 'application/json, text/plain, */*'
+    };
+
+    const NEW_TV_DOMAINS = [
+        'aHR0cHM6Ly9tb2JpbGVkZXRlY3RzLmNvbQ==',
+        'aHR0cHM6Ly9tb2JpbGVkZXRlY3QuYXBw',
+        'aHR0cHM6Ly9tb2JpZGV0ZWN0LmFydA==',
+        'aHR0cHM6Ly9tb2JpZGV0ZWN0LmNj',
+        'aHR0cHM6Ly9tb2JpZGV0ZWN0LmNsaWNr',
+        'aHR0cHM6Ly9tb2JpZGV0ZWN0Lmluaw==',
+        'aHR0cHM6Ly9tb2JpZGV0ZWN0LmxpdmU=',
+        'aHR0cHM6Ly9tb2JpZGV0ZWN0LnBybw==',
+        'aHR0cHM6Ly9tb2JpZGV0ZWN0LnNob3A=',
+        'aHR0cHM6Ly9tb2JpZGV0ZWN0LnNpdGU=',
+        'aHR0cHM6Ly9tb2JpZGV0ZWN0LnNwYWNl',
+        'aHR0cHM6Ly9tb2JpZGV0ZWN0LnN0b3Jl',
+        'aHR0cHM6Ly9tb2JpZGV0ZWN0LnZpcA==',
+        'aHR0cHM6Ly9tb2JpZGV0ZWN0Lndpa2k=',
+        'aHR0cHM6Ly9tb2JpZGV0ZWN0Lnh5eg==',
+        'aHR0cHM6Ly9tb2JpZGV0ZWN0cy5hcnQ=',
+        'aHR0cHM6Ly9tb2JpZGV0ZWN0cy5jYw==',
+        'aHR0cHM6Ly9tb2JpZGV0ZWN0cy5pbmZv',
+        'aHR0cHM6Ly9tb2JpZGV0ZWN0cy5pbms=',
+        'aHR0cHM6Ly9tb2JpZGV0ZWN0cy5saXZl',
+        'aHR0cHM6Ly9tb2JpZGV0ZWN0cy5wcm8=',
+        'aHR0cHM6Ly9tb2JpZGV0ZWN0cy5zdG9yZQ==',
+        'aHR0cHM6Ly9tb2JpZGV0ZWN0cy50b3A=',
+        'aHR0cHM6Ly9tb2JpZGV0ZWN0cy54eXo='
+    ];
+
+    const PROVIDERS = {
+        'NETFLIX': {
+            id: 'NETFLIX',
+            ott: 'nf',
+            baseUrl: BASE_URL,
+            playUrl: PLAY_URL,
+            homePath: '/mobile/home?app=1',
+            searchPath: '/mobile/search.php',
+            postPath: '/mobile/post.php',
+            episodesPath: '/mobile/episodes.php',
+            playlistPath: '/mobile/playlist.php',
+            usePlayHandshake: true,
+            includeUserToken: true,
+            poster: function (id) { return 'https://imgcdn.kim/poster/v/' + id + '.jpg'; },
+            background: function (id) { return 'https://imgcdn.kim/poster/h/' + id + '.jpg'; },
+            episodePoster: function (id) { return 'https://imgcdn.kim/epimg/150/' + id + '.jpg'; }
+        },
+        'PRIME VIDEO': {
+            id: 'PRIME VIDEO',
+            ott: 'pv',
+            baseUrl: PLAY_URL,
+            playUrl: PLAY_URL,
+            homePath: '/mobile/home?app=1',
+            searchPath: '/mobile/pv/search.php',
+            postPath: '/mobile/pv/post.php',
+            episodesPath: '/mobile/pv/episodes.php',
+            playlistPath: '/mobile/pv/playlist.php',
+            usePlayHandshake: true,
+            includeUserToken: true,
+            poster: function (id) { return 'https://imgcdn.kim/pv/v/' + id + '.jpg'; },
+            background: function (id) { return 'https://imgcdn.kim/pv/h/' + id + '.jpg'; },
+            episodePoster: function (id) { return 'https://imgcdn.kim/pvepimg/150/' + id + '.jpg'; }
+        },
+        'HOTSTAR': {
+            id: 'HOTSTAR',
+            ott: 'hs',
+            baseUrl: PLAY_URL,
+            playUrl: PLAY_URL,
+            homePath: '/mobile/home?app=1',
+            searchPath: '/mobile/hs/search.php',
+            postPath: '/mobile/hs/post.php',
+            episodesPath: '/mobile/hs/episodes.php',
+            playlistPath: '/mobile/hs/playlist.php',
+            usePlayHandshake: true,
+            includeUserToken: true,
+            poster: function (id) { return 'https://imgcdn.kim/hs/v/' + id + '.jpg'; },
+            background: function (id) { return 'https://imgcdn.kim/hs/h/' + id + '.jpg'; },
+            episodePoster: function (id) { return 'https://imgcdn.kim/hsepimg/150/' + id + '.jpg'; }
+        },
+        'DISNEY PLUS': {
+            id: 'DISNEY PLUS',
+            ott: 'dp',
+            studio: 'disney',
+            baseUrl: PLAY_URL,
+            playUrl: PLAY_URL,
+            homePath: '/mobile/home?app=1',
+            searchPath: '/mobile/hs/search.php',
+            postPath: '/mobile/hs/post.php',
+            episodesPath: '/mobile/hs/episodes.php',
+            playlistPath: '/mobile/hs/playlist.php',
+            usePlayHandshake: true,
+            includeUserToken: true,
+            poster: function (id) { return 'https://imgcdn.kim/hs/v/' + id + '.jpg'; },
+            background: function (id) { return 'https://imgcdn.kim/hs/h/' + id + '.jpg'; },
+            episodePoster: function (id) { return 'https://imgcdn.kim/hsepimg/150/' + id + '.jpg'; }
+        }
+    };
+
+    let cachedCookie = '';
+    let lastBypassTime = 0;
+    let resolvedNewTvApiUrl = '';
+
+    function clean(v) { return String(v || '').trim(); }
+    function parseJsonSafe(text, fb) { try { return JSON.parse(text); } catch (_) { return fb; } }
+    function unixTs() { return Math.floor(Date.now() / 1000); }
+
+    function cfg() {
+        const pid = clean((manifest && manifest.providerId) || '').toUpperCase();
+        return PROVIDERS[pid] || PROVIDERS['NETFLIX'];
+    }
+
+    function providerHeaders(provider) {
+        const pid = clean(provider && provider.id).toUpperCase();
+        return (pid === 'HOTSTAR' || pid === 'DISNEY PLUS' || pid === 'NETFLIX') ? MOBILE_COMMON_HEADERS : COMMON_HEADERS;
+    }
+
+    function proxiedImage(url) {
+        if (!url) return '';
+        return 'https://wsrv.nl/?url=' + encodeURIComponent(url) + '&w=500';
+    }
+
+    function parseSetCookie(raw) {
+        let txt = raw;
+        if (Array.isArray(txt)) txt = txt.join('; ');
+        txt = clean(txt);
+        if (!txt) return '';
+        const m = txt.match(/t_hash_t=([^;]+)/i);
+        return m && m[1] ? decodeURIComponent(m[1]) : '';
+    }
+
+    function decodeBase64(value) {
+        if (typeof atob === 'function') return atob(value);
+        if (typeof Buffer !== 'undefined') return Buffer.from(value, 'base64').toString('utf-8');
+        return '';
+    }
+
+    function buildNewTvHeaders(ott, extra) {
+        const headers = Object.assign({}, NEW_TV_BASE_HEADERS, { Ott: ott });
+        if (extra) {
+            Object.keys(extra).forEach(function (key) {
+                headers[key] = extra[key];
+            });
+        }
+        return headers;
+    }
+
+    async function resolveNewTvApiUrl() {
+        if (resolvedNewTvApiUrl) return resolvedNewTvApiUrl;
+        for (let i = 0; i < NEW_TV_DOMAINS.length; i++) {
+            const base = decodeBase64(NEW_TV_DOMAINS[i]).replace(/\/+$/, '');
+            if (!base) continue;
+            try {
+                const res = await http_get(base + '/checknewtv.php', NEW_TV_BASE_HEADERS);
+                const data = parseJsonSafe(res.body, {});
+                const tokenHash = clean(data.token_hash);
+                if (tokenHash) {
+                    resolvedNewTvApiUrl = decodeBase64(tokenHash).replace(/\/+$/, '');
+                    if (resolvedNewTvApiUrl) return resolvedNewTvApiUrl;
+                }
+            } catch (_) {
+                // Try next domain.
+            }
+        }
+        throw new Error('Failed to resolve NewTV API base URL');
+    }
+
+    function randomUuid() {
+        if (typeof crypto !== 'undefined' && crypto && typeof crypto.randomUUID === 'function') {
+            return crypto.randomUUID();
+        }
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+            const r = Math.random() * 16 | 0;
+            const v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    }
+
+    const BYPASS_UA = 'Mozilla/5.0 (Linux; Android 12; RMX2117 Build/SP1A.210812.016; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/147.0.7727.55 Mobile Safari/537.36 /OS.Gatu v3.0';
+
+    function collectCookies(headers) {
+        var raw = headers && (headers['set-cookie'] || headers['Set-Cookie']);
+        if (!raw) return '';
+        var list = Array.isArray(raw) ? raw : [raw];
+        var parts = [];
+        for (var i = 0; i < list.length; i++) {
+            var first = list[i].split(';')[0].trim();
+            if (first.indexOf('=') !== -1) parts.push(first);
+        }
+        return parts.join('; ');
+    }
+
+    async function bypass(provider) {
+        const now = Date.now();
+        if (cachedCookie && (now - lastBypassTime) < 54000000) return cachedCookie;
+        try {
+            const mobileHeaders = {
+                'User-Agent': BYPASS_UA,
+                'X-Requested-With': 'app.netmirror.netmirrornew'
+            };
+            const challengeUrl = BASE_URL + '/mobile/home?app=1';
+            const challengeRes = await http_get(challengeUrl, mobileHeaders);
+            var cookieJar = collectCookies(challengeRes.headers);
+            const html = String(challengeRes.body || '');
+            const am = html.match(/<body[^>]*data-addhash="([^"]+)"/i);
+            const addhash = am ? am[1] : '';
+            if (!addhash) throw new Error('Failed to extract addhash from challenge page');
+            var userverHeaders = {};
+            if (cookieJar) userverHeaders['Cookie'] = cookieJar;
+            var userverRes = await http_get('https://userver.net52.cc/?jjoii=' + encodeURIComponent(addhash) + '&a=y&t=' + Date.now(), userverHeaders);
+            var extraCookies = collectCookies(userverRes.headers);
+            if (extraCookies) cookieJar = cookieJar ? cookieJar + '; ' + extraCookies : extraCookies;
+            const verifyHeaders = {
+                'User-Agent': BYPASS_UA,
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'redirect': 'follow'
+            };
+            if (cookieJar) verifyHeaders['Cookie'] = cookieJar;
+            // Use addhash as verify param and run retry loop to wait for backend ad approval (one-line comment)
+            const verifyBody = 'verify=' + encodeURIComponent(addhash);
+            let lastError = null;
+            for (let attempt = 0; attempt < 25; attempt++) {
+                if (attempt > 0) await new Promise(function (r) { return setTimeout(r, 2000); });
+                try {
+                    const verifyRes = await http_post(BASE_URL + '/mobile/verify2.php', verifyHeaders, verifyBody);
+                    const rawHeader = (verifyRes.headers && (verifyRes.headers['set-cookie'] || verifyRes.headers['Set-Cookie'])) || '';
+                    const hash = parseSetCookie(rawHeader);
+                    if (hash) {
+                        cachedCookie = hash;
+                        lastBypassTime = Date.now();
+                        return cachedCookie;
+                    }
+                    const verifyText = String(verifyRes.body || '');
+                    if (verifyText.indexOf('"statusup":"All Done"') !== -1) {
+                        throw new Error('verify2 returned All Done but no t_hash_t cookie');
+                    }
+                } catch (e) {
+                    lastError = e;
+                }
+            }
+            throw lastError || new Error('Failed to verify cookie');
+        } catch (e) {
+            cachedCookie = '';
+            lastBypassTime = 0;
+            throw e;
+        }
+    }
+
+    async function cookieString(provider) {
+        const hash = await bypass(provider);
+        const parts = ['t_hash_t=' + hash, 'ott=' + provider.ott, 'hd=on'];
+        if (provider.studio) parts.push('studio=' + provider.studio);
+        if (provider.includeUserToken) parts.push('user_token=233123f803cf02184bf6c67e149cdd50');
+        return parts.join('; ');
+    }
+
+    function parseNetflixRows(html, provider) {
+        const sections = {};
+        const rowRegex = /<div[^>]*class="[^"]*lolomoRow[^"]*"[^>]*>([\s\S]*?)(?=<div[^>]*class="[^"]*lolomoRow[^"]*"[^>]*>|$)/g;
+        let rowMatch;
+        while ((rowMatch = rowRegex.exec(html)) !== null) {
+            const rowHtml = rowMatch[1];
+            let title = 'Trending';
+            const titleMatch = rowHtml.match(/<div class="row-header-title">([\s\S]*?)<\/div>/) || rowHtml.match(/<h2[^>]*>([\s\S]*?)<\/h2>/);
+            if (titleMatch) title = clean(titleMatch[1].replace(/<[^>]*>/g, '')) || 'Trending';
+
+            const items = [];
+            const seen = {};
+            const imgRegex = /<img[^>]*class="[^"]*lazy[^"]*"[^>]*data-src="([^"]+)"/g;
+            let imgMatch;
+            while ((imgMatch = imgRegex.exec(rowHtml)) !== null) {
+                const imgSrc = imgMatch[1];
+                const id = clean(imgSrc).split('/').pop().split('.')[0];
+                if (!id || seen[id]) continue;
+                seen[id] = true;
+                items.push(new MultimediaItem({
+                    title: ' ',
+                    url: JSON.stringify({ provider: provider.id, id: id }),
+                    posterUrl: proxiedImage(provider.poster(id)),
+                    type: 'movie'
+                }));
+            }
+            if (items.length > 0) sections[title] = items;
+        }
+        return sections;
+    }
+
+    function parseTrayRows(html, provider) {
+        const sections = {};
+        const globalRegex = /<(h2|span|div|p)[^>]*class="[^"]*(tray-title|mobile-tray-title|title|tray-title-container)[^"]*"[^>]*>([\s\S]*?)<\/\1>|data-post="([^"]+)"/ig;
+
+        let currentTitle = 'Trending';
+        let gMatch;
+        while ((gMatch = globalRegex.exec(html)) !== null) {
+            if (gMatch[3]) {
+                const titleText = clean(gMatch[3].replace(/<[^>]*>/g, ''));
+                if (titleText && titleText.length > 2 && titleText.length < 50 && titleText.indexOf('{') === -1) {
+                    currentTitle = titleText;
+                }
+            } else if (gMatch[4]) {
+                const id = clean(gMatch[4]);
+                if (!id || id.indexOf("'") >= 0 || id.indexOf('+') >= 0) continue;
+                if (!sections[currentTitle]) sections[currentTitle] = [];
+                if (!sections[currentTitle].some(function (it) {
+                    const parsed = parseJsonSafe(it.url, {});
+                    return parsed && parsed.id === id;
+                })) {
+                    sections[currentTitle].push(new MultimediaItem({
+                        title: ' ',
+                        url: JSON.stringify({ provider: provider.id, id: id }),
+                        posterUrl: proxiedImage(provider.poster(id)),
+                        type: 'movie'
+                    }));
+                }
+            }
+        }
+        return sections;
+    }
+
+    async function fetchPagedEpisodes(provider, seriesId, seasonId, page, episodes, cookieStr) {
+        let pg = page;
+        while (true) {
+            try {
+                const epUrl = provider.baseUrl + provider.episodesPath + '?s=' + encodeURIComponent(seasonId) + '&series=' + encodeURIComponent(seriesId) + '&t=' + unixTs() + '&page=' + pg;
+                const res = await http_get(epUrl, Object.assign({}, providerHeaders(provider), { Cookie: cookieStr }));
+                const data = parseJsonSafe(res.body, {});
+                (Array.isArray(data.episodes) ? data.episodes : []).forEach(function (ep) {
+                    episodes.push(new Episode({
+                        name: clean(ep.t) || 'Episode',
+                        season: parseInt(String(ep.s || '').replace('S', ''), 10) || 1,
+                        episode: parseInt(String(ep.ep || '').replace('E', ''), 10) || 1,
+                        url: JSON.stringify({ provider: provider.id, kind: 'play', id: clean(ep.id), title: clean(ep.t) || 'Episode' }),
+                        posterUrl: proxiedImage(provider.episodePoster(clean(ep.id)))
+                    }));
+                });
+                if (Number(data.nextPageShow || 0) === 0) break;
+                pg++;
+            } catch (_) {
+                break;
+            }
+        }
+    }
+
+    async function getHome(cb) {
+        try {
+            const provider = cfg();
+            const cookieStr = await cookieString(provider);
+            const headers = Object.assign({}, providerHeaders(provider), {
+                Referer: (provider.baseUrl + '/mobile/home?app=1'),
+                Cookie: cookieStr,
+                'X-Requested-With': 'XMLHttpRequest'
+            });
+
+            if (provider.id === 'PRIME VIDEO') {
+                const primeHeaders = Object.assign({}, headers, { Referer: BASE_URL + '/home' });
+                const res = await http_get(provider.baseUrl + provider.homePath, primeHeaders);
+                const root = parseJsonSafe(res.body, {});
+                const out = {};
+                (Array.isArray(root.post) ? root.post : []).forEach(function (group) {
+                    const name = clean(group.cate) || 'Trending';
+                    const ids = clean(group.ids).split(',').map(clean).filter(Boolean);
+                    if (!ids.length) return;
+                    out[name] = ids.map(function (id) {
+                        return new MultimediaItem({
+                            title: ' ',
+                            url: JSON.stringify({ provider: provider.id, id: id }),
+                            posterUrl: provider.poster(id),
+                            type: 'movie'
+                        });
+                    });
+                });
+                return cb({ success: true, data: out });
+            }
+
+            const res = await http_get(provider.baseUrl + provider.homePath, headers);
+            const html = String(res.body || '');
+            const data = parseTrayRows(html, provider);
+            cb({ success: true, data: data });
+        } catch (e) {
+            cb({ success: false, errorCode: 'HOME_ERROR', message: String(e && e.message || e) });
+        }
+    }
+
+    async function search(query, cb) {
+        try {
+            const provider = cfg();
+            const cookieStr = await cookieString(provider);
+            const url = provider.baseUrl + provider.searchPath + '?s=' + encodeURIComponent(query) + '&t=' + unixTs();
+            const referer = provider.id === 'NETFLIX' ? provider.baseUrl + '/tv/home' : BASE_URL + '/home';
+            const res = await http_get(url, Object.assign({}, providerHeaders(provider), { Referer: referer, Cookie: cookieStr }));
+            const data = parseJsonSafe(res.body, {});
+            const list = (data.searchResult || []).map(function (item) {
+                return new MultimediaItem({
+                    title: clean(item.t) || 'Title',
+                    url: JSON.stringify({ provider: provider.id, id: clean(item.id) }),
+                    posterUrl: proxiedImage(provider.poster(clean(item.id))),
+                    type: 'movie'
+                });
+            });
+            cb({ success: true, data: list });
+        } catch (e) {
+            cb({ success: false, errorCode: 'SEARCH_ERROR', message: String(e && e.message || e) });
+        }
+    }
+
+    async function load(urlData, cb) {
+        try {
+            const payload = parseJsonSafe(urlData, null);
+            if (!payload || !payload.id) return cb({ success: false, errorCode: 'PARSE_ERROR', message: 'Invalid payload' });
+
+            const provider = PROVIDERS[clean(payload.provider).toUpperCase()] || cfg();
+            const cookieStr = await cookieString(provider);
+            const postUrl = provider.baseUrl + provider.postPath + '?id=' + encodeURIComponent(payload.id) + '&t=' + unixTs();
+            const referer = BASE_URL + '/tv/home';
+            const res = await http_get(postUrl, Object.assign({}, providerHeaders(provider), { Referer: referer, Cookie: cookieStr }));
+            const data = parseJsonSafe(res.body, {});
+
+            const episodes = [];
+            if (Array.isArray(data.episodes) && data.episodes.length > 0 && data.episodes[0]) {
+                data.episodes.forEach(function (ep) {
+                    episodes.push(new Episode({
+                        name: clean(ep.t) || 'Episode',
+                        season: parseInt(String(ep.s || '').replace('S', ''), 10) || 1,
+                        episode: parseInt(String(ep.ep || '').replace('E', ''), 10) || 1,
+                        url: JSON.stringify({ provider: provider.id, kind: 'play', id: clean(ep.id), title: clean(ep.t) || clean(data.title) || 'Title' }),
+                        posterUrl: proxiedImage(provider.episodePoster(clean(ep.id)))
+                    }));
+                });
+                if (Number(data.nextPageShow || 0) === 1 && data.nextPageSeason) {
+                    await fetchPagedEpisodes(provider, payload.id, data.nextPageSeason, 2, episodes, cookieStr);
+                }
+                if (Array.isArray(data.season) && data.season.length > 1) {
+                    for (let i = 0; i < data.season.length - 1; i++) {
+                        if (data.season[i] && data.season[i].id) {
+                            await fetchPagedEpisodes(provider, payload.id, data.season[i].id, 1, episodes, cookieStr);
+                        }
+                    }
+                }
+            } else {
+                episodes.push(new Episode({
+                    name: clean(data.title) || 'Watch',
+                    season: 1,
+                    episode: 1,
+                    url: JSON.stringify({ provider: provider.id, kind: 'play', id: payload.id, title: clean(data.title) || 'Watch' }),
+                    posterUrl: proxiedImage(provider.poster(payload.id))
+                }));
+            }
+
+            cb({
+                success: true,
+                data: new MultimediaItem({
+                    title: clean(data.title) || 'Title',
+                    url: JSON.stringify({ provider: provider.id, id: payload.id }),
+                    posterUrl: proxiedImage(provider.poster(payload.id)),
+                    backgroundPosterUrl: proxiedImage(provider.background(payload.id)),
+                    description: clean(data.desc),
+                    type: episodes.length > 1 ? 'tvseries' : 'movie',
+                    year: parseInt(data.year, 10) || undefined,
+                    episodes: episodes
+                })
+            });
+        } catch (e) {
+            cb({ success: false, errorCode: 'LOAD_ERROR', message: String(e && e.message || e) });
+        }
+    }
+
+    async function loadPrimeStreams(provider, payload) {
+        const cookieStr = await cookieString(provider);
+        const playlistUrl = provider.baseUrl + provider.playlistPath + '?id=' + encodeURIComponent(payload.id) + '&t=' + encodeURIComponent(payload.title || '') + '&tm=' + unixTs();
+        const res = await http_get(playlistUrl, Object.assign({}, COMMON_HEADERS, { Referer: provider.baseUrl + '/home', Cookie: cookieStr, 'X-Requested-With': 'XMLHttpRequest' }));
+        const playlist = parseJsonSafe(res.body, []);
+        const out = [];
+        (Array.isArray(playlist) ? playlist : []).forEach(function (item) {
+            (Array.isArray(item.sources) ? item.sources : []).forEach(function (src, i) {
+                let fullUrl = String(src.file || '').replace('/tv/', '/');
+                if (!/^https?:\/\//i.test(fullUrl)) {
+                    if (!fullUrl.startsWith('/')) fullUrl = '/' + fullUrl;
+                    fullUrl = provider.playUrl + fullUrl;
+                }
+                out.push(new StreamResult({
+                    url: fullUrl,
+                    source: 'PrimeVideo [' + (clean(src.label) || ('S' + (i + 1))) + ']',
+                    type: 'hls',
+                    headers: {
+                        Referer: provider.playUrl + '/',
+                        Cookie: cookieStr,
+                        'User-Agent': COMMON_HEADERS['User-Agent']
+                    }
+                }));
+            });
+        });
+        return out;
+    }
+
+    async function loadMobilePlaylistStreams(provider, payload, playlistPath, ottOverride) {
+        const hash = await bypass(provider);
+        const ott = ottOverride || provider.ott;
+        let cookieStr = 't_hash_t=' + hash + '; ott=' + ott + '; hd=on';
+        if (provider.studio) cookieStr += '; studio=' + provider.studio;
+        const baseUrl = provider.playUrl;
+        const playlistUrl = baseUrl + playlistPath + '?id=' + encodeURIComponent(payload.id) + '&t=' + encodeURIComponent(payload.title || '') + '&tm=' + unixTs();
+        const res = await http_get(playlistUrl, Object.assign({}, providerHeaders(provider), {
+            Referer: baseUrl + '/home',
+            Cookie: cookieStr
+        }));
+        const playlist = parseJsonSafe(res.body, []);
+        const out = [];
+
+        (Array.isArray(playlist) ? playlist : []).forEach(function (item) {
+            (Array.isArray(item.sources) ? item.sources : []).forEach(function (src, i) {
+                const rawFile = clean(src.file);
+                if (!rawFile) return;
+                const finalUrl = baseUrl + '/' + rawFile.replace(/^\/+/, '');
+                out.push(new StreamResult({
+                    url: finalUrl,
+                    source: clean(src.label) || ('Server ' + (i + 1)),
+                    type: 'hls',
+                    headers: {
+                        Referer: baseUrl + '/home',
+                        Cookie: cookieStr,
+                        'User-Agent': (providerHeaders(provider) || {})['User-Agent'] || COMMON_HEADERS['User-Agent']
+                    }
+                }));
+            });
+        });
+
+        return out;
+    }
+
+    async function loadUnifiedTvStream(provider, payload) {
+        const apiBase = await resolveNewTvApiUrl();
+        const ott = (provider.id === 'HOTSTAR' || provider.id === 'DISNEY PLUS') ? 'hs' : provider.ott;
+        const apiHeaders = buildNewTvHeaders(ott, { Usertoken: '' });
+        const res = await http_get(apiBase + '/newtv/player.php?id=' + payload.id, apiHeaders);
+        const data = parseJsonSafe(res.body, {});
+        if (!data.video_link) return [];
+
+        // Streaming headers must be minimal — the API headers above include
+        // Accept: application/json and Cache-Control: no-cache, which break
+        // HLS segment fetches. We also wrap the CDN URL in MAGIC_PROXY_v2 so
+        // the local proxy injects these headers on every segment request and
+        // can normalize the CDN's broken Range-with-gzip responses.
+        const streamHeaders = {
+            'User-Agent': NEW_TV_BASE_HEADERS['User-Agent'],
+            'Ott': ott
+        };
+        const proxyConfig = JSON.stringify({ url: data.video_link, headers: streamHeaders });
+        const proxyUrl = 'MAGIC_PROXY_v2' + btoa(proxyConfig);
+
+        return [new StreamResult({
+            url: proxyUrl,
+            source: provider.id + ' [NetMirror]',
+            type: 'hls',
+            headers: streamHeaders
+        })];
+    }
+
+    async function loadStreams(dataStr, cb) {
+        try {
+            const payload = parseJsonSafe(dataStr, null);
+            if (!payload || !payload.id) return cb({ success: false, errorCode: 'PARSE_ERROR', message: 'Invalid stream payload' });
+            const provider = PROVIDERS[clean(payload.provider).toUpperCase()] || cfg();
+
+            let results = [];
+            try {
+                // Try CS3 direct HLS playlist extraction first (one-line comment)
+                if (provider.id === 'HOTSTAR' || provider.id === 'DISNEY PLUS') {
+                    results = await loadMobilePlaylistStreams(provider, payload, '/mobile/hs/playlist.php', 'hs');
+                } else if (provider.id === 'NETFLIX') {
+                    results = await loadMobilePlaylistStreams(provider, payload, '/mobile/playlist.php');
+                } else {
+                    results = await loadPrimeStreams(provider, payload);
+                }
+            } catch (_) {
+                results = [];
+            }
+
+            // Failsafe: Try unified TV player stream if direct playlists failed
+            if (!results.length) {
+                try {
+                    results = await loadUnifiedTvStream(provider, payload);
+                } catch (_) {
+                    results = [];
+                }
+            }
+            cb({ success: true, data: results });
+        } catch (e) {
+            cb({ success: false, errorCode: 'STREAM_ERROR', message: String(e && e.message || e) });
+        }
+    }
+
+    globalThis.getHome = getHome;
+    globalThis.search = search;
+    globalThis.load = load;
+    globalThis.loadStreams = loadStreams;
+})();
