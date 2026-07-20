@@ -226,65 +226,146 @@ var __BUNDLED_MANIFEST__="eyJwYWNrYWdlTmFtZSI6ImRldi5uaXZpbmNuYy5jbmN2ZXJzZS5jbm
         return parts.join('; ');
     }
 
-    async function bypass(provider) {
-        const now = Date.now();
-        if (cachedCookie && (now - lastBypassTime) < 54000000) return cachedCookie;
-        try {
-            const mobileHeaders = {
-                'User-Agent': BYPASS_UA,
-                'X-Requested-With': 'app.netmirror.netmirrornew'
-            };
-            const challengeUrl = BASE_URL + '/mobile/home?app=1';
-            const challengeRes = await http_get(challengeUrl, mobileHeaders);
-            var cookieJar = collectCookies(challengeRes.headers);
-            const html = String(challengeRes.body || '');
-            const am = html.match(/<body[^>]*data-addhash="([^"]+)"/i);
-            const addhash = am ? am[1] : '';
-            if (!addhash) throw new Error('Failed to extract addhash from challenge page');
-            var userverHeaders = {};
-            if (cookieJar) userverHeaders['Cookie'] = cookieJar;
-            var userverRes = await http_get('https://userver.net52.cc/?jjoii=' + encodeURIComponent(addhash) + '&a=y&t=' + Date.now(), userverHeaders);
-            var extraCookies = collectCookies(userverRes.headers);
-            if (extraCookies) cookieJar = cookieJar ? cookieJar + '; ' + extraCookies : extraCookies;
-            const verifyHeaders = {
-                'User-Agent': BYPASS_UA,
-                'X-Requested-With': 'XMLHttpRequest',
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'redirect': 'follow'
-            };
-            if (cookieJar) verifyHeaders['Cookie'] = cookieJar;
-            // Use addhash as verify param and run retry loop to wait for backend ad approval (one-line comment)
-            const verifyBody = 'verify=' + encodeURIComponent(addhash);
-            let lastError = null;
-            for (let attempt = 0; attempt < 25; attempt++) {
-                if (attempt > 0) await new Promise(function (r) { return setTimeout(r, 2000); });
-                try {
-                    const verifyRes = await http_post(BASE_URL + '/mobile/verify2.php', verifyHeaders, verifyBody);
-                    const rawHeader = (verifyRes.headers && (verifyRes.headers['set-cookie'] || verifyRes.headers['Set-Cookie'])) || '';
-                    const hash = parseSetCookie(rawHeader);
-                    if (hash) {
-                        cachedCookie = hash;
-                        lastBypassTime = Date.now();
-                        return cachedCookie;
-                    }
-                    const verifyText = String(verifyRes.body || '');
-                    if (verifyText.indexOf('"statusup":"All Done"') !== -1) {
-                        throw new Error('verify2 returned All Done but no t_hash_t cookie');
-                    }
-                } catch (e) {
-                    lastError = e;
+    let isNewToken = false;
+    // Track isNewToken state and use backgroundBypassPromise to await new verify token for streams (one-line comment)
+    try {
+        cachedCookie = localStorage.getItem('cnc_cached_cookie') || '';
+        lastBypassTime = parseInt(localStorage.getItem('cnc_last_bypass_time') || '0', 10);
+        isNewToken = localStorage.getItem('cnc_is_new_token') === 'true';
+    } catch (_) {}
+
+    let isRefreshing = false;
+    let backgroundBypassPromise = null;
+
+    // Immediately kick off parallel background bypass on plugin load to start resolving premium verify2 token (one-line comment)
+    setTimeout(function() {
+        try { runBackgroundBypass(cfg()); } catch (_) {}
+    }, 0);
+
+    async function quickBypass(provider) {
+        const uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+        const body = 'g-recaptcha-response=' + encodeURIComponent(uuid);
+        const headers = {
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Origin': BASE_URL,
+            'Referer': BASE_URL + '/verify2',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36'
+        };
+        const res = await http_post(BASE_URL + '/verify.php', headers, body);
+        const rawHeader = (res.headers && (res.headers['set-cookie'] || res.headers['Set-Cookie'])) || '';
+        const hash = parseSetCookie(rawHeader);
+        if (hash) {
+            cachedCookie = hash;
+            isNewToken = false;
+            lastBypassTime = Date.now();
+            try {
+                localStorage.setItem('cnc_cached_cookie', cachedCookie);
+                localStorage.setItem('cnc_last_bypass_time', lastBypassTime.toString());
+                localStorage.setItem('cnc_is_new_token', 'false');
+            } catch (_) {}
+            return cachedCookie;
+        }
+        throw new Error('Quick legacy verify failed');
+    }
+
+    function runBackgroundBypass(provider) {
+        if (backgroundBypassPromise) return backgroundBypassPromise;
+        backgroundBypassPromise = (async () => {
+            if (isRefreshing) return;
+            isRefreshing = true;
+            try {
+                const challengeUrl = BASE_URL + '/mobile/home?app=1';
+                const challengeRes = await http_get(challengeUrl, {
+                    'User-Agent': BYPASS_UA,
+                    'X-Requested-With': 'app.netmirror.netmirrornew'
+                });
+                var cookieJar = collectCookies(challengeRes.headers);
+                const html = String(challengeRes.body || '');
+                const am = html.match(/<body[^>]*data-addhash="([^"]+)"/i);
+                const addhash = am ? am[1] : '';
+                if (!addhash) throw new Error('Failed to extract addhash');
+                
+                var userverHeaders = {};
+                if (cookieJar) userverHeaders['Cookie'] = cookieJar;
+                
+                const parts = addhash.split('::');
+                const ts = (parts.length > 2) ? parts[2] : Math.floor(Date.now() / 1000);
+                await http_get('https://userver.net52.cc/?jjoii=' + encodeURIComponent(addhash) + '&a=y&t=' + ts, userverHeaders);
+
+                const verifyHeaders = {
+                    'User-Agent': BYPASS_UA,
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'redirect': 'follow'
+                };
+                if (cookieJar) verifyHeaders['Cookie'] = cookieJar;
+                const verifyBody = 'verify=' + encodeURIComponent(addhash);
+                
+                for (let attempt = 0; attempt < 6; attempt++) {
+                    if (attempt > 0) await new Promise(function (r) { return setTimeout(r, 8000); });
+                    try {
+                        const verifyRes = await http_post(BASE_URL + '/mobile/verify2.php', verifyHeaders, verifyBody);
+                        const rawHeader = (verifyRes.headers && (verifyRes.headers['set-cookie'] || verifyRes.headers['Set-Cookie'])) || '';
+                        const hash = parseSetCookie(rawHeader);
+                        if (hash) {
+                            cachedCookie = hash;
+                            isNewToken = true;
+                            lastBypassTime = Date.now();
+                            try {
+                                localStorage.setItem('cnc_cached_cookie', cachedCookie);
+                                localStorage.setItem('cnc_last_bypass_time', lastBypassTime.toString());
+                                localStorage.setItem('cnc_is_new_token', 'true');
+                            } catch (_) {}
+                            break;
+                        }
+                    } catch (_) {}
                 }
+            } catch (_) {
+            } finally {
+                isRefreshing = false;
+                backgroundBypassPromise = null;
             }
-            throw lastError || new Error('Failed to verify cookie');
-        } catch (e) {
-            cachedCookie = '';
-            lastBypassTime = 0;
-            throw e;
+        })();
+        return backgroundBypassPromise;
+    }
+
+    async function bypass(provider, forceNew) {
+        const now = Date.now();
+        if (forceNew) {
+            // Enforce usage of cached premium verify2 token and await background resolution without firing new requests (one-line comment)
+            if (cachedCookie && isNewToken) {
+                return cachedCookie;
+            }
+            if (backgroundBypassPromise) {
+                await backgroundBypassPromise;
+            }
+            return cachedCookie || '';
+        }
+        if (cachedCookie) {
+            if (now - lastBypassTime > 3600000) {
+                runBackgroundBypass(provider);
+            }
+            return cachedCookie;
+        }
+        // Concurrently run background bypass in parallel with quickBypass (one-line comment)
+        runBackgroundBypass(provider);
+        try {
+            return await quickBypass(provider);
+        } catch (_) {
+            if (backgroundBypassPromise) {
+                await backgroundBypassPromise;
+            }
+            if (cachedCookie) return cachedCookie;
+            throw new Error('Failed to verify cookie');
         }
     }
 
-    async function cookieString(provider) {
-        const hash = await bypass(provider);
+    async function cookieString(provider, forceNew) {
+        const hash = await bypass(provider, forceNew);
         const parts = ['t_hash_t=' + hash, 'ott=' + provider.ott, 'hd=on'];
         if (provider.studio) parts.push('studio=' + provider.studio);
         if (provider.includeUserToken) parts.push('user_token=233123f803cf02184bf6c67e149cdd50');
@@ -502,7 +583,8 @@ var __BUNDLED_MANIFEST__="eyJwYWNrYWdlTmFtZSI6ImRldi5uaXZpbmNuYy5jbmN2ZXJzZS5jbm
     }
 
     async function loadPrimeStreams(provider, payload) {
-        const cookieStr = await cookieString(provider);
+        // Enforce new verified token for prime stream extraction to avoid playback 403 errors (one-line comment)
+        const cookieStr = await cookieString(provider, true);
         const playlistUrl = provider.baseUrl + provider.playlistPath + '?id=' + encodeURIComponent(payload.id) + '&t=' + encodeURIComponent(payload.title || '') + '&tm=' + unixTs();
         const res = await http_get(playlistUrl, Object.assign({}, COMMON_HEADERS, { Referer: provider.baseUrl + '/home', Cookie: cookieStr, 'X-Requested-With': 'XMLHttpRequest' }));
         const playlist = parseJsonSafe(res.body, []);
@@ -530,7 +612,8 @@ var __BUNDLED_MANIFEST__="eyJwYWNrYWdlTmFtZSI6ImRldi5uaXZpbmNuYy5jbmN2ZXJzZS5jbm
     }
 
     async function loadMobilePlaylistStreams(provider, payload, playlistPath, ottOverride) {
-        const hash = await bypass(provider);
+        // Enforce new verified token for mobile stream playlist extraction to avoid playback 403 errors (one-line comment)
+        const hash = await bypass(provider, true);
         const ott = ottOverride || provider.ott;
         let cookieStr = 't_hash_t=' + hash + '; ott=' + ott + '; hd=on';
         if (provider.studio) cookieStr += '; studio=' + provider.studio;
