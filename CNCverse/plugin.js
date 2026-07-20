@@ -345,7 +345,8 @@
             return cachedCookie || '';
         }
         if (cachedCookie) {
-            if (now - lastBypassTime > 3600000) {
+            // Set bypass cache age to 6 hours (21600000 ms) before triggering background refresh (one-line comment)
+            if (now - lastBypassTime > 21600000) {
                 runBackgroundBypass(provider);
             }
             return cachedCookie;
@@ -458,11 +459,21 @@
         }
     }
 
+    function isResponseValid(body, provider) {
+        const txt = String(body || '');
+        if (provider.id === 'PRIME VIDEO') {
+            const json = parseJsonSafe(txt, {});
+            return Array.isArray(json.post) && json.post.length > 0;
+        }
+        return txt.indexOf('lolomoRow') !== -1 || txt.indexOf('data-post') !== -1 || txt.indexOf('tray-title') !== -1 || txt.indexOf('mobile-tray-title') !== -1;
+    }
+
+    // Add helper isResponseValid and retry flow in getHome to handle token invalidation or IP changes (one-line comment)
     async function getHome(cb) {
         try {
             const provider = cfg();
-            const cookieStr = await cookieString(provider);
-            const headers = Object.assign({}, providerHeaders(provider), {
+            let cookieStr = await cookieString(provider);
+            let headers = Object.assign({}, providerHeaders(provider), {
                 Referer: (provider.baseUrl + '/mobile/home?app=1'),
                 Cookie: cookieStr,
                 'X-Requested-With': 'XMLHttpRequest'
@@ -470,7 +481,20 @@
 
             if (provider.id === 'PRIME VIDEO') {
                 const primeHeaders = Object.assign({}, headers, { Referer: BASE_URL + '/home' });
-                const res = await http_get(provider.baseUrl + provider.homePath, primeHeaders);
+                let res = await http_get(provider.baseUrl + provider.homePath, primeHeaders);
+                if (!isResponseValid(res.body, provider)) {
+                    cachedCookie = '';
+                    isNewToken = false;
+                    lastBypassTime = 0;
+                    try {
+                        localStorage.removeItem('cnc_cached_cookie');
+                        localStorage.removeItem('cnc_is_new_token');
+                        localStorage.removeItem('cnc_last_bypass_time');
+                    } catch (_) {}
+                    cookieStr = await cookieString(provider);
+                    const freshHeaders = Object.assign({}, headers, { Cookie: cookieStr, Referer: BASE_URL + '/home' });
+                    res = await http_get(provider.baseUrl + provider.homePath, freshHeaders);
+                }
                 const root = parseJsonSafe(res.body, {});
                 const out = {};
                 (Array.isArray(root.post) ? root.post : []).forEach(function (group) {
@@ -489,7 +513,20 @@
                 return cb({ success: true, data: out });
             }
 
-            const res = await http_get(provider.baseUrl + provider.homePath, headers);
+            let res = await http_get(provider.baseUrl + provider.homePath, headers);
+            if (!isResponseValid(res.body, provider)) {
+                cachedCookie = '';
+                isNewToken = false;
+                lastBypassTime = 0;
+                try {
+                    localStorage.removeItem('cnc_cached_cookie');
+                    localStorage.removeItem('cnc_is_new_token');
+                    localStorage.removeItem('cnc_last_bypass_time');
+                } catch (_) {}
+                cookieStr = await cookieString(provider);
+                const freshHeaders = Object.assign({}, headers, { Cookie: cookieStr });
+                res = await http_get(provider.baseUrl + provider.homePath, freshHeaders);
+            }
             const html = String(res.body || '');
             const data = parseTrayRows(html, provider);
             cb({ success: true, data: data });
