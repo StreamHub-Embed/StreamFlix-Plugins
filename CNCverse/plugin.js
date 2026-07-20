@@ -236,11 +236,13 @@
     let isRefreshing = false;
     let backgroundBypassPromise = null;
 
-    // Only kick off background bypass on startup if cached token is stale or not premium (one-line comment)
+    // Add logPlugin instrumentation throughout the bypass and background verification functions (one-line comment)
     setTimeout(function() {
         if (cachedCookie && isNewToken && (Date.now() - lastBypassTime <= 21600000)) {
+            logPlugin('BYPASS', 'Startup check: Cached premium token is fresh (' + Math.round((Date.now() - lastBypassTime) / 60000) + 'm old). Skipping background bypass.');
             return;
         }
+        logPlugin('BYPASS', 'Startup check: Stale, missing, or legacy token. Initiating background bypass...');
         try { runBackgroundBypass(cfg()); } catch (_) {}
     }, 0);
 
@@ -280,6 +282,7 @@
             if (isRefreshing) return;
             isRefreshing = true;
             try {
+                logPlugin('BYPASS', 'Background bypass started. Fetching challenge home page...');
                 const challengeUrl = BASE_URL + '/mobile/home?app=1';
                 const challengeRes = await http_get(challengeUrl, {
                     'User-Agent': BYPASS_UA,
@@ -296,6 +299,7 @@
                 
                 const parts = addhash.split('::');
                 const ts = (parts.length > 2) ? parts[2] : Math.floor(Date.now() / 1000);
+                logPlugin('BYPASS', 'Executing userver request for addhash activation...');
                 await http_get('https://userver.net52.cc/?jjoii=' + encodeURIComponent(addhash) + '&a=y&t=' + ts, userverHeaders);
 
                 const verifyHeaders = {
@@ -307,13 +311,18 @@
                 if (cookieJar) verifyHeaders['Cookie'] = cookieJar;
                 const verifyBody = 'verify=' + encodeURIComponent(addhash);
                 
+                logPlugin('BYPASS', 'Polling mobile/verify2.php...');
                 for (let attempt = 0; attempt < 6; attempt++) {
-                    if (attempt > 0) await new Promise(function (r) { return setTimeout(r, 8000); });
+                    if (attempt > 0) {
+                        logPlugin('BYPASS', 'Polling attempt ' + attempt + ' did not return token. Waiting 8s...');
+                        await new Promise(function (r) { return setTimeout(r, 8000); });
+                    }
                     try {
                         const verifyRes = await http_post(BASE_URL + '/mobile/verify2.php', verifyHeaders, verifyBody);
                         const rawHeader = (verifyRes.headers && (verifyRes.headers['set-cookie'] || verifyRes.headers['Set-Cookie'])) || '';
                         const hash = parseSetCookie(rawHeader);
                         if (hash) {
+                            logPlugin('BYPASS', 'Successfully fetched new premium token hash: ' + hash + '. Replaced cached token.');
                             cachedCookie = hash;
                             isNewToken = true;
                             lastBypassTime = Date.now();
@@ -326,7 +335,8 @@
                         }
                     } catch (_) {}
                 }
-            } catch (_) {
+            } catch (e) {
+                logPlugin('BYPASS', 'Background bypass error: ' + (e && e.message || e));
             } finally {
                 isRefreshing = false;
                 backgroundBypassPromise = null;
@@ -338,28 +348,30 @@
     async function bypass(provider, forceNew) {
         const now = Date.now();
         if (forceNew) {
-            // Enforce usage of cached premium verify2 token and await background resolution without firing new requests (one-line comment)
             if (cachedCookie && isNewToken) {
                 return cachedCookie;
             }
             if (backgroundBypassPromise) {
+                logPlugin('BYPASS', 'Stream load requested but premium token not ready yet. Awaiting background bypass...');
                 await backgroundBypassPromise;
+                logPlugin('BYPASS', 'Background bypass completed. Returning premium token: ' + cachedCookie);
             }
             return cachedCookie || '';
         }
         if (cachedCookie) {
-            // Set bypass cache age to 6 hours (21600000 ms) before triggering background refresh (one-line comment)
             if (now - lastBypassTime > 21600000) {
+                logPlugin('BYPASS', 'Cached token expired (6 hours). Triggering background refresh...');
                 runBackgroundBypass(provider);
             }
             return cachedCookie;
         }
-        // Concurrently run background bypass in parallel with quickBypass (one-line comment)
+        logPlugin('BYPASS', 'No cached token. Concurrently launching quickBypass (legacy) and backgroundBypass...');
         runBackgroundBypass(provider);
         try {
             return await quickBypass(provider);
         } catch (_) {
             if (backgroundBypassPromise) {
+                logPlugin('BYPASS', 'Quick bypass failed. Awaiting background bypass...');
                 await backgroundBypassPromise;
             }
             if (cachedCookie) return cachedCookie;
@@ -486,6 +498,7 @@
                 const primeHeaders = Object.assign({}, headers, { Referer: BASE_URL + '/home' });
                 let res = await http_get(provider.baseUrl + provider.homePath, primeHeaders);
                 if (!isResponseValid(res.body, provider)) {
+                    logPlugin('BYPASS', 'IP change or token invalidation detected on Prime Video home load. Clearing cache and triggering fresh bypass.');
                     cachedCookie = '';
                     isNewToken = false;
                     lastBypassTime = 0;
@@ -518,6 +531,7 @@
 
             let res = await http_get(provider.baseUrl + provider.homePath, headers);
             if (!isResponseValid(res.body, provider)) {
+                logPlugin('BYPASS', 'IP change or token invalidation detected on home load. Clearing cache and triggering fresh bypass.');
                 cachedCookie = '';
                 isNewToken = false;
                 lastBypassTime = 0;
