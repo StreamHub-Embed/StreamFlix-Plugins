@@ -1,10 +1,10 @@
 {
-  "packageName": "dev.nivincnc.cncverse.cncverse",
+  "packageName": "dev.streamflix.cncverse",
   "name": "CNCVerse",
   "version": 9,
   "baseUrl": "https://net52.cc",
   "description": "Netflix, PrimeVideo, Disney+ Hotstar Contents in Multiple Languages",
-  "authors": ["NivinCNC"],
+  "authors": ["NivinCNC", "0xBadCode"],
   "languages": ["en", "ta", "hi"],
   "categories": ["Movie", "TvSeries", "Anime"],
   "providers": [

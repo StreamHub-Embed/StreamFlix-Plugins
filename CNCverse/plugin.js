@@ -84,13 +84,14 @@
         'PRIME VIDEO': {
             id: 'PRIME VIDEO',
             ott: 'pv',
-            baseUrl: PLAY_URL,
+            // Align PRIME VIDEO endpoint paths with the correct NetMirror /pv/ paths (one-line comment)
+            baseUrl: BASE_URL,
             playUrl: PLAY_URL,
-            homePath: '/mobile/home?app=1',
-            searchPath: '/mobile/pv/search.php',
-            postPath: '/mobile/pv/post.php',
-            episodesPath: '/mobile/pv/episodes.php',
-            playlistPath: '/mobile/pv/playlist.php',
+            homePath: '/pv/homepage.php',
+            searchPath: '/pv/search.php',
+            postPath: '/pv/post.php',
+            episodesPath: '/pv/episodes.php',
+            playlistPath: '/pv/playlist.php',
             usePlayHandshake: true,
             includeUserToken: true,
             poster: function (id) { return 'https://imgcdn.kim/pv/v/' + id + '.jpg'; },
@@ -263,6 +264,7 @@
         const rawHeader = (res.headers && (res.headers['set-cookie'] || res.headers['Set-Cookie'])) || '';
         const hash = parseSetCookie(rawHeader);
         if (hash) {
+            logPlugin('BYPASS', 'Got legacy token: ' + hash);
             cachedCookie = hash;
             isNewToken = false;
             lastBypassTime = Date.now();
@@ -322,10 +324,11 @@
                         const rawHeader = (verifyRes.headers && (verifyRes.headers['set-cookie'] || verifyRes.headers['Set-Cookie'])) || '';
                         const hash = parseSetCookie(rawHeader);
                         if (hash) {
-                            logPlugin('BYPASS', 'Successfully fetched new premium token hash: ' + hash + '. Replaced cached token.');
+                            const oldToken = cachedCookie || 'NONE';
                             cachedCookie = hash;
                             isNewToken = true;
                             lastBypassTime = Date.now();
+                            logPlugin('BYPASS', 'Replaced old token with new: ' + oldToken + ' -> ' + hash);
                             try {
                                 localStorage.setItem('cnc_cached_cookie', cachedCookie);
                                 localStorage.setItem('cnc_last_bypass_time', lastBypassTime.toString());
@@ -521,7 +524,8 @@
                         return new MultimediaItem({
                             title: ' ',
                             url: JSON.stringify({ provider: provider.id, id: id }),
-                            posterUrl: provider.poster(id),
+                            // Wrap Prime Video homepage posters in proxiedImage helper (one-line comment)
+                            posterUrl: proxiedImage(provider.poster(id)),
                             type: 'movie'
                         });
                     });
