@@ -182,6 +182,25 @@
     return s && (s.indexOf("http://") === 0 || s.indexOf("https://") === 0);
   }
 
+  function safeBase64(str) {
+    if (typeof btoa !== "undefined") return btoa(str);
+    if (typeof Buffer !== "undefined") return Buffer.from(str, "utf-8").toString("base64");
+    var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    var encoded = "", i = 0, c1, c2, c3, b1, b2, b3, b4;
+    while (i < str.length) {
+      c1 = str.charCodeAt(i++);
+      c2 = str.charCodeAt(i++);
+      c3 = str.charCodeAt(i++);
+      b1 = c1 >> 2;
+      b2 = ((c1 & 3) << 4) | (c2 >> 4);
+      b3 = ((c2 & 15) << 2) | (c3 >> 6);
+      b4 = c3 & 63;
+      if (isNaN(c2)) { b3 = b4 = 64; } else if (isNaN(c3)) { b4 = 64; }
+      encoded += chars.charAt(b1) + chars.charAt(b2) + chars.charAt(b3) + chars.charAt(b4);
+    }
+    return encoded;
+  }
+
   function skyType(t) {
     return t === "movie" || t === "short" ? "movie" : "series";
   }
@@ -956,9 +975,7 @@
         (isStreamingPlaylist || isMaybeProxied || hasExtraHeaders) &&
         !isDirectMedia
       ) {
-        if (typeof btoa !== "undefined") {
-          sourceUrl = "MAGIC_PROXY_v1" + btoa(sourceUrl);
-        }
+        sourceUrl = "MAGIC_PROXY_v1" + safeBase64(sourceUrl);
         bh.notWebReady = true;
       } else if (!isDirectMedia) {
         bh.notWebReady = true;
