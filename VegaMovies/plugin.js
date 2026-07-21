@@ -56,6 +56,11 @@
         return m ? m[1] : url;
     }
 
+    function proxyImg(url) {
+        if (!url || url.indexOf('wsrv.nl') >= 0) return url;
+        return 'https://wsrv.nl/?url=' + encodeURIComponent(url) + '&w=500';
+    }
+
     function getQualityNum(str) {
         if (!str) return 0;
         var m = str.match(/(\d{3,4})[pP]/);
@@ -503,7 +508,7 @@
                     var title = cleanTitle(pm[3]);
                     if (!title || title.indexOf('${') >= 0) continue;
                     if (isBadUrl(pm[1])) continue;
-                    items.push({ title: title, url: fixUrl(pm[1]), posterUrl: pm[2].indexOf('://') >= 0 ? pm[2] : fixUrl(pm[2]), type: 'movie', description: '' });
+                    items.push({ title: title, url: fixUrl(pm[1]), posterUrl: proxyImg(pm[2].indexOf('://') >= 0 ? pm[2] : fixUrl(pm[2])), type: 'movie', description: '' });
                 }
                 return items.length > 0 ? { name: c.n, items: items } : null;
             }));
@@ -541,7 +546,7 @@
                                 return {
                                     title: cleanTitle(d.post_title || ''),
                                     url: permalink.indexOf('://') >= 0 ? permalink : (permalink.indexOf('/') === 0 ? domain.base + permalink : domain.base + '/' + permalink),
-                                    posterUrl: d.post_thumbnail || '',
+                                    posterUrl: proxyImg(d.post_thumbnail || ''),
                                     type: 'movie',
                                     description: ''
                                 };
@@ -557,7 +562,7 @@
                                     var t2 = cleanTitle(imgM2[2]);
                                 if (t2) {
                                     var u = lm[1].indexOf('://') >= 0 ? lm[1] : domain.base + (lm[1].indexOf('/') === 0 ? lm[1] : '/' + lm[1]);
-                                    results.push({ title: t2, url: u, posterUrl: imgM2[1].indexOf('://') >= 0 ? imgM2[1] : domain.base + (imgM2[1].indexOf('/') === 0 ? imgM2[1] : '/' + imgM2[1]), type: 'movie', description: '' });
+                                    results.push({ title: t2, url: u, posterUrl: proxyImg(imgM2[1].indexOf('://') >= 0 ? imgM2[1] : domain.base + (imgM2[1].indexOf('/') === 0 ? imgM2[1] : '/' + imgM2[1])), type: 'movie', description: '' });
                                 }
                             }
                         }
@@ -783,10 +788,10 @@
                     genres = Array.isArray(tRes.genres) ? tRes.genres.map(function(g) { return g.name; }) : [];
                     imdbRating = tRes.vote_average ? String(tRes.vote_average) : '';
                     year = (tRes.release_date || tRes.first_air_date || '').split('-')[0] || year;
-                    if (tRes.poster_path) poster = 'https://image.tmdb.org/t/p/w500' + tRes.poster_path;
+                    if (tRes.poster_path) poster = proxyImg('https://image.tmdb.org/t/p/w500' + tRes.poster_path);
                     if (tRes.external_ids && tRes.external_ids.imdb_id) imdbId = tRes.external_ids.imdb_id;
                     var rawCast = (tRes.credits && tRes.credits.cast) || [];
-                    var castList = rawCast.slice(0, 15).map(function(c) { return new Actor({ name: c.name, image: c.profile_path ? 'https://image.tmdb.org/t/p/w500' + c.profile_path : null, role: c.character }); });
+                    var castList = rawCast.slice(0, 15).map(function(c) { return new Actor({ name: c.name, image: c.profile_path ? proxyImg('https://image.tmdb.org/t/p/w500' + c.profile_path) : null, role: c.character }); });
                 }
             } catch (e) {}
 
@@ -801,7 +806,7 @@
                             var su = TMDB_API + '/tv/' + tRes.id + '/season/' + sn + (TMDB_KEY ? '?api_key=' + TMDB_KEY : '');
                             var sd = await fetchJson(su);
                             if (sd && sd.episodes) sd.episodes.forEach(function(ep) {
-                                if (ep.still_path) stillMap[sn + '_' + ep.episode_number] = 'https://image.tmdb.org/t/p/w500' + ep.still_path;
+                                if (ep.still_path) stillMap[sn + '_' + ep.episode_number] = proxyImg('https://image.tmdb.org/t/p/w500' + ep.still_path);
                             });
                         } catch(e) {}
                     })();
@@ -826,7 +831,7 @@
                         url: epUrl,
                         season: sn,
                         episode: en,
-                        posterUrl: stillMap[sn + '_' + en] || poster || '',
+                        posterUrl: stillMap[sn + '_' + en] || proxyImg(poster) || '',
                         description: description || ''
                     });
                 }
@@ -842,7 +847,7 @@
                     url: movieUrl,
                     season: 1,
                     episode: 1,
-                    posterUrl: poster || '',
+                    posterUrl: proxyImg(poster) || '',
                     description: description || ''
                 });
             }
@@ -852,7 +857,7 @@
             cb({ success: true, data: new MultimediaItem({
                 title: title || 'Unknown',
                 url: pageUrl || '',
-                posterUrl: poster || '',
+                posterUrl: proxyImg(poster) || '',
                 type: isSeries ? 'series' : 'movie',
                 description: description || '',
                 year: yearVal,
