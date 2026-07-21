@@ -423,7 +423,8 @@
 
     function parseTrayRows(html, provider) {
         const sections = {};
-        const globalRegex = /<(h2|span|div|p)[^>]*class="[^"]*(tray-title|mobile-tray-title|title|tray-title-container)[^"]*"[^>]*>([\s\S]*?)<\/\1>|data-post="([^"]+)"/ig;
+        // Skip spotlight billboard buttons with data-post in parseTrayRows (one-line comment)
+        const globalRegex = /<(h2|span|div|p)[^>]*class="[^"]*(tray-title|mobile-tray-title|title|tray-title-container)[^"]*"[^>]*>([\s\S]*?)<\/\1>|<[^>]*data-post="([^"]+)"/ig;
 
         let currentTitle = 'Trending';
         let gMatch;
@@ -434,6 +435,10 @@
                     currentTitle = titleText;
                 }
             } else if (gMatch[4]) {
+                const tagStr = gMatch[0];
+                if (tagStr.indexOf('<button') === 0 || tagStr.indexOf('btn-play') !== -1 || tagStr.indexOf('btn-mylist') !== -1) {
+                    continue;
+                }
                 const id = clean(gMatch[4]);
                 if (!id || id.indexOf("'") >= 0 || id.indexOf('+') >= 0) continue;
                 if (!sections[currentTitle]) sections[currentTitle] = [];
@@ -449,6 +454,9 @@
                     }));
                 }
             }
+        }
+        if (sections['Trending'] && sections['Trending'].length === 0) {
+            delete sections['Trending'];
         }
         return sections;
     }
