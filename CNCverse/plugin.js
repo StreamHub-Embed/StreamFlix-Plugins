@@ -239,7 +239,7 @@
 
     // Add logPlugin instrumentation throughout the bypass and background verification functions (one-line comment)
     setTimeout(function() {
-        if (cachedCookie && isNewToken && (Date.now() - lastBypassTime <= 21600000)) {
+        if (cachedCookie && isNewToken && (Date.now() - lastBypassTime <= 72000000)) {
             logPlugin('BYPASS', 'Startup check: Cached premium token is fresh (' + Math.round((Date.now() - lastBypassTime) / 60000) + 'm old). Skipping background bypass.');
             return;
         }
@@ -362,8 +362,8 @@
             return cachedCookie || '';
         }
         if (cachedCookie) {
-            if (now - lastBypassTime > 21600000) {
-                logPlugin('BYPASS', 'Cached token expired (6 hours). Triggering background refresh...');
+            if (now - lastBypassTime > 72000000) {
+                logPlugin('BYPASS', 'Cached token expired (20 hours). Triggering background refresh...');
                 runBackgroundBypass(provider);
             }
             return cachedCookie;
