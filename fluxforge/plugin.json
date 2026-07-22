@@ -7,5 +7,30 @@
   "description": "Browse movies and TV shows via TMDB API",
   "authors": ["0xBadCode"],
   "languages": ["en"],
-  "categories": ["Movie", "TvSeries"]
+  "categories": ["Movie", "TvSeries"],
+  "extractors": {
+    "Vaplayer": false,
+    "Vidlink": false,
+    "VidEasy": false,
+    "Vidrock": false,
+    "RiveStream": false,
+    "2embed": false,
+    "VidSrcXyz": false,
+    "SkyMoviesHD": true,
+    "VidFast": false,
+    "VidCore": false,
+    "VidSync": false,
+    "MovieLinkBD": false
+  },
+  "hosters": {
+    "pixeldrain": true,
+    "filepress": true,
+    "gdflix": true,
+    "hubcloud": true,
+    "voe": true,
+    "multicloudlinks": true,
+    "uploadflix": true,
+    "uploadhub": true,
+    "streamtape": true
+  }
 }

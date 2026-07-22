@@ -7,6 +7,11 @@
     var HEADERS = { "User-Agent": UA, "Accept": "application/json" };
     var _tmdbCache = {};
 
+    var EXTRACTORS = (manifest && manifest.extractors) || {};
+    var HOSTERS = (manifest && manifest.hosters) || {};
+    function isExtractor(name) { return EXTRACTORS[name] !== false; }
+    function isHoster(name) { return HOSTERS[name] !== false; }
+
     // ───── Provider header presets (from Kotlin extractors) ─────
     var H_VAPLAYER = { "Referer": "https://nextgencloudfabric.com/", "User-Agent": UA };
     var H_VIDLINK  = { "Origin": "https://vidlink.pro", "Referer": "https://vidlink.pro/", "User-Agent": UA };
@@ -210,7 +215,7 @@
     }
     function qLabel(q) { var n = parseInt(q, 10); return n ? n + "p" : ""; }
 
-    // ───── AES-256-CBC pure JS (fallback when crypto.subtle unavailable) ─────
+    // ───── AES-256-CBC pure JS ─────
     // ───── Provider: Vaplayer ─────
     async function fetchVaplayer(tmdbId, season, episode) {
         try {
@@ -784,10 +789,10 @@
         var HTML_HEADERS = { "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" };
         try {
             var lowerUrl = url.toLowerCase();
-            if (lowerUrl.indexOf("pixeldrain.dev/u/") !== -1 || lowerUrl.indexOf("pixeldrain.com/u/") !== -1) {
+            if (isHoster("pixeldrain") && (lowerUrl.indexOf("pixeldrain.dev/u/") !== -1 || lowerUrl.indexOf("pixeldrain.com/u/") !== -1)) {
                 var pxlId = url.split("/u/")[1].split("?")[0];
                 streams.push({ url: "https://pixeldrain.dev/api/file/" + pxlId + "?download", label: "Pixeldrain API" });
-            } else if (lowerUrl.indexOf("filepress") !== -1) {
+            } else if (isHoster("filepress") && lowerUrl.indexOf("filepress") !== -1) {
                 var parsedUrl = String(url || "");
                 var m = parsedUrl.match(/\/file\/([a-zA-Z0-9]+)/);
                 var fileId = m ? m[1] : "";
@@ -869,7 +874,7 @@
                         } catch (_) {}
                     }
                 }
-            } else if (lowerUrl.indexOf("gdflix") !== -1) {
+            } else if (isHoster("gdflix") && lowerUrl.indexOf("gdflix") !== -1) {
                 var html = await fetchUrl(url, HTML_HEADERS);
                 if (html) {
                     var busyM = html.match(/href="([^"]*instant\.busycdn\.xyz[^"]*)"/i);
@@ -880,7 +885,7 @@
                     var fastM = html.match(/href="([^"]*gdflix\.dev\/zfile\/[^"]*)"/i);
                     if (fastM) streams.push({ url: fastM[1], label: "GDFlix Fast Cloud" });
                 }
-            } else if (lowerUrl.indexOf("hubcloud") !== -1 || lowerUrl.indexOf("vcloud") !== -1) {
+            } else if (isHoster("hubcloud") && (lowerUrl.indexOf("hubcloud") !== -1 || lowerUrl.indexOf("vcloud") !== -1)) {
                 var html = await fetchUrl(url, HTML_HEADERS);
                 if (html) {
                     var genM = html.match(/href="([^"']*\/hubcloud\.php[^"']*)"/i);
@@ -902,7 +907,7 @@
                         }
                     }
                 }
-            } else if (lowerUrl.indexOf("voe.sx/") !== -1) {
+            } else if (isHoster("voe") && lowerUrl.indexOf("voe.sx/") !== -1) {
                 // Decrypt VOE player stream URL
                 var html = await fetchUrl(url, HTML_HEADERS);
                 if (html) {
@@ -962,7 +967,7 @@
                         }
                     }
                 }
-            } else if (lowerUrl.indexOf("multicloudlinks") !== -1) {
+            } else if (isHoster("multicloudlinks") && lowerUrl.indexOf("multicloudlinks") !== -1) {
                 // Manual redirect chain to ensure we get the final HTML page
                 var mcUrl = url;
                 for (var mci = 0; mci < 5; mci++) {
@@ -1002,7 +1007,7 @@
                     }
                     break;
                 }
-            } else if (lowerUrl.indexOf("uploadflix") !== -1) {
+            } else if (isHoster("uploadflix") && lowerUrl.indexOf("uploadflix") !== -1) {
                 var ufUrl = url;
                 for (var ufi = 0; ufi < 5; ufi++) {
                     var ufRes = await http_get(ufUrl, { redirect: "manual", headers: { "User-Agent": UA, "Accept": "text/html,*/*" } });
@@ -1027,7 +1032,7 @@
                     }
                     break;
                 }
-            } else if (lowerUrl.indexOf("uploadhub") !== -1) {
+            } else if (isHoster("uploadhub") && lowerUrl.indexOf("uploadhub") !== -1) {
                 var uhUrl = url;
                 for (var uhi = 0; uhi < 5; uhi++) {
                     var uhRes = await http_get(uhUrl, { redirect: "manual", headers: { "User-Agent": UA, "Accept": "text/html,*/*" } });
@@ -1056,7 +1061,7 @@
                     }
                     break;
                 }
-            } else if (lowerUrl.indexOf("streamtape") !== -1 || lowerUrl.indexOf("tpead.net") !== -1) {
+            } else if (isHoster("streamtape") && (lowerUrl.indexOf("streamtape") !== -1 || lowerUrl.indexOf("tpead.net") !== -1)) {
                 var html = await fetchUrl(url, HTML_HEADERS);
                 if (html) {
                     var tapeM = html.match(/id="ideoooolink"[^>]*>([^<]+)/i);
@@ -1648,33 +1653,29 @@
             if (details && details.external_ids && details.external_ids.imdb_id) imdbId = details.external_ids.imdb_id;
 
             var failMap = {};
-            var wrappedVaplayer = fluxStream(fetchVaplayer, "Vaplayer", failMap);
-            var wrappedVidlink = fluxStream(fetchVidlink, "Vidlink", failMap);
-            var wrappedVidEasy = fluxStream(fetchVidEasy, "VidEasy", failMap);
-            var wrappedVidrock = fluxStream(fetchVidrock, "Vidrock", failMap);
-            var wrappedRiveStream = fluxStream(fetchRiveStream, "RiveStream", failMap);
-            var wrapped2embed = fluxStream(fetch2embed, "2embed", failMap);
-            var wrappedVidSrcXyz = fluxStream(fetchVidSrcXyz, "VidSrcXyz", failMap);
-            var wrappedSkyMoviesHD = fluxStream(fetchSkyMoviesHD, "SkyMoviesHD", failMap);
-            var wrappedVidFast = fluxStream(fetchVidFast, "VidFast", failMap);
-            var wrappedVidCore = fluxStream(fetchVidCore, "VidCore", failMap);
-            var wrappedVidSync = fluxStream(fetchVidSync, "VidSync", failMap);
-            var wrappedMovieLinkBD = fluxStream(fetchMovieLinkBD, "MovieLinkBD", failMap);
-
-            var providerCalls = [
-                wrappedVaplayer(tmdbId, season, episode),
-                wrappedVidlink(tmdbId, season, episode),
-                wrappedVidEasy(tmdbId, season, episode),
-                wrappedVidrock(tmdbId, season, episode),
-                wrappedRiveStream(tmdbId, season, episode),
-                wrapped2embed(imdbId, season, episode),
-                wrappedVidSrcXyz(imdbId, season, episode),
-                wrappedSkyMoviesHD(tmdbId, season, episode),
-                wrappedVidFast(tmdbId, season, episode),
-                wrappedVidCore(tmdbId, season, episode),
-                wrappedVidSync(tmdbId, season, episode),
-                wrappedMovieLinkBD(tmdbId, season, episode)
+            var PROVIDERS = [
+                { name: "Vaplayer", fn: fetchVaplayer, useImdb: false },
+                { name: "Vidlink", fn: fetchVidlink, useImdb: false },
+                { name: "VidEasy", fn: fetchVidEasy, useImdb: false },
+                { name: "Vidrock", fn: fetchVidrock, useImdb: false },
+                { name: "RiveStream", fn: fetchRiveStream, useImdb: false },
+                { name: "2embed", fn: fetch2embed, useImdb: true },
+                { name: "VidSrcXyz", fn: fetchVidSrcXyz, useImdb: true },
+                { name: "SkyMoviesHD", fn: fetchSkyMoviesHD, useImdb: false },
+                { name: "VidFast", fn: fetchVidFast, useImdb: false },
+                { name: "VidCore", fn: fetchVidCore, useImdb: false },
+                { name: "VidSync", fn: fetchVidSync, useImdb: false },
+                { name: "MovieLinkBD", fn: fetchMovieLinkBD, useImdb: false }
             ];
+
+            var providerCalls = [];
+            for (var pi = 0; pi < PROVIDERS.length; pi++) {
+                var prov = PROVIDERS[pi];
+                if (!isExtractor(prov.name)) continue;
+                var wrapped = fluxStream(prov.fn, prov.name, failMap);
+                var id = prov.useImdb ? imdbId : tmdbId;
+                providerCalls.push(wrapped(id, season, episode));
+            }
 
             var settled = await Promise.allSettled(providerCalls);
             var results = [];
