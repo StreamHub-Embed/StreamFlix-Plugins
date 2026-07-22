@@ -869,7 +869,7 @@
                         } catch (_) {}
                     }
                 }
-            } else if (lowerUrl.indexOf("gdflix.dev/file/") !== -1) {
+            } else if (lowerUrl.indexOf("gdflix") !== -1) {
                 var html = await fetchUrl(url, HTML_HEADERS);
                 if (html) {
                     var busyM = html.match(/href="([^"]*instant\.busycdn\.xyz[^"]*)"/i);
@@ -883,7 +883,7 @@
             } else if (lowerUrl.indexOf("hubcloud") !== -1 || lowerUrl.indexOf("vcloud") !== -1) {
                 var html = await fetchUrl(url, HTML_HEADERS);
                 if (html) {
-                    var genM = html.match(/href="([^"]*gamerxyt\.com\/hubcloud\.php[^"]*)"/i);
+                    var genM = html.match(/href="([^"']*\/hubcloud\.php[^"']*)"/i);
                     if (genM) {
                         var genUrl = genM[1].replace(/&amp;/g, "&");
                         var genHtml = await fetchUrl(genUrl, HTML_HEADERS);
@@ -1162,9 +1162,9 @@
 
             if (matches.length === 0) return [];
 
-            // Scrape up to 3 matching pages for multiple qualities
+            // Scrape all matching pages for multiple qualities
             matches.sort(function(a, b) { return b.score - a.score; });
-            var slicedMatches = matches.slice(0, 3);
+            var slicedMatches = matches;
 
             var results = [];
             var seenUrls = {};
@@ -1198,8 +1198,9 @@
                 var anchors2 = pageData[pd].anchors;
                 var quality = pageData[pd].quality;
                 for (var bi = 0; bi < anchors2.length; bi++) {
-                    var hr = anchors2[bi].getAttribute("href") || "";
+                    var hr = (anchors2[bi].getAttribute("href") || "").trim();
                     var txt = cleanText(anchors2[bi].textContent);
+                    if (!hr) continue;
                     if (!/howblogs\.xyz|tpead\.net|hubcloud|cinedrive|gdflix|hubdrive|filepress|gofile|voe|streamtape|pixeldrain|multicloudlinks|uploadflix|uploadhub|busycdn/i.test(hr)) continue;
                     if (seenHr[hr]) continue;
                     seenHr[hr] = true;
@@ -1229,7 +1230,7 @@
                 var hbdoc = parseHtml(hbr.body);
                 var hbAs = hbdoc.querySelectorAll("a");
                 for (var hi = 0; hi < hbAs.length; hi++) {
-                    var hbHref = hbAs[hi].getAttribute("href") || "";
+                    var hbHref = (hbAs[hi].getAttribute("href") || "").trim();
                     if (hbHref.indexOf("http") === 0 && !hbHref.includes("howblogs")) {
                         allCandidates.push({ url: hbHref, quality: meta.quality, txt: meta.txt });
                     }
@@ -1247,11 +1248,15 @@
                 uniqueCandidates.push(cand);
             }
 
-            // 7. Resolve all direct streams in parallel!
+            // 7. Resolve all direct streams in parallel with per-URL timeout
             var resolvedResults = await Promise.all(uniqueCandidates.map(function(cand) {
-                return resolveDirectStream(cand.url).then(function(streams) {
+                var rp = resolveDirectStream(cand.url).then(function(streams) {
                     return { cand: cand, streams: streams };
                 });
+                var tp = new Promise(function(resolve) {
+                    setTimeout(function() { resolve({ cand: cand, streams: [] }); }, 8000);
+                });
+                return Promise.race([rp, tp]);
             }));
 
             // 8. Build final results
