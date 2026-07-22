@@ -1061,6 +1061,20 @@
                     }
                     break;
                 }
+            } else if (isHoster("fastxyz") && (lowerUrl.indexOf("/xfile.php") !== -1 || lowerUrl.indexOf("pfile_id_token.php") !== -1)) {
+                var html = await fetchUrl(url, HTML_HEADERS);
+                if (html) {
+                    var dlM = html.match(/href="([^"]*downloadmf\/pfile_id_token\.php\?fid=[^"]*)"/i);
+                    if (dlM) {
+                        var dlUrl = dlM[1].replace(/&amp;/g, "&");
+                        if (dlUrl.indexOf("http") !== 0) dlUrl = getBaseUrl(url) + (dlUrl.indexOf("/") === 0 ? "" : "/") + dlUrl;
+                        var redirRes = await http_get(dlUrl, { redirect: "manual", headers: { "User-Agent": UA } });
+                        if (redirRes) {
+                            var finalLoc = redirRes.headers["location"] || redirRes.headers["Location"];
+                            if (finalLoc) streams.push({ url: finalLoc, label: "FastXYZ Direct" });
+                        }
+                    }
+                }
             } else if (isHoster("streamtape") && (lowerUrl.indexOf("streamtape") !== -1 || lowerUrl.indexOf("tpead.net") !== -1)) {
                 var html = await fetchUrl(url, HTML_HEADERS);
                 if (html) {
@@ -1206,7 +1220,7 @@
                     var hr = (anchors2[bi].getAttribute("href") || "").trim();
                     var txt = cleanText(anchors2[bi].textContent);
                     if (!hr) continue;
-                    if (!/howblogs\.xyz|tpead\.net|hubcloud|cinedrive|gdflix|hubdrive|filepress|gofile|voe|streamtape|pixeldrain|multicloudlinks|uploadflix|uploadhub|busycdn/i.test(hr)) continue;
+                    if (!/howblogs\.xyz|tpead\.net|hubcloud|cinedrive|gdflix|hubdrive|filepress|gofile|voe|streamtape|pixeldrain|multicloudlinks|uploadflix|uploadhub|busycdn|xfile\.php/i.test(hr)) continue;
                     if (seenHr[hr]) continue;
                     seenHr[hr] = true;
 

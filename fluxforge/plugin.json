@@ -31,6 +31,7 @@
     "multicloudlinks": true,
     "uploadflix": true,
     "uploadhub": true,
-    "streamtape": true
+    "streamtape": true,
+    "fastxyz": true
   }
 }
