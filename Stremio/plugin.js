@@ -2160,6 +2160,7 @@
           if (!dk) continue;
           if (!seenDedup[prefix + dk]) {
             seenDedup[prefix + dk] = true;
+            st.drop_403 = true;
             merged.push(st);
           }
         }
