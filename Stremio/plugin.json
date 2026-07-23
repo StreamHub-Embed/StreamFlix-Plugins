@@ -1,5 +1,5 @@
 {
-	"packageName": "dev.cookie.stremio",
+	"packageName": "dev.streamflix.stremio",
 	"name": "stremio http",
 	"version": 3,
 	"baseUrl": "https://stremio-hub.local",
